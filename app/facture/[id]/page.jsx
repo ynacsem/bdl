@@ -2,13 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'
-import { handleSearch } from '@/utils/handleSearch';
+import { handleEdit, handleedit } from '@/utils/handleEdit';
 import { handleModifier } from '@/utils/handlePut';
 
-export default function ModifierFacture() {
+export default function ModifierFacture({params}) {
   const router = useRouter();
   
-    const [isSearch,setIsSearch] = useState(true);
+    
   const [suppliers, setSuppliers] = useState([]);
   const [gest, setGest] = useState([]);
   const [formData, setFormData] = useState({
@@ -74,38 +74,55 @@ export default function ModifierFacture() {
     // Recalculate montantTotal if montantU or qte are changed
     if (name === 'montantU' || name === 'qte') {
       newTableData[index].montantTotal = (parseFloat(newTableData[index].montantU || 0) * parseFloat(newTableData[index].qte || 0)).toFixed(2);
+      setFormData({ ...formData, montant: calculateTotal(newTableData) });
     }
   
     // Update the state with the new table data
     setTableData(newTableData);
     
     // Recalculate and update the formData with the total montant
-    setFormData({ ...formData, montant: calculateTotal(newTableData) });
+    
   };
   
 
   const handleAddRow = () => {
-    setTableData([
-      ...tableData,
-      {
-        id:0,
-        codeOperation: '',
-        libelle: '',
-        compte: '',
-        TVA: '',
-        ligneBudgetaire: '',
-        nature: '',
-        amputationComplementaire1: '',
-        amputationComplementaire2: '',
-        destination: '',
-        montantU: 0,
-        qte: 0,
-        montantTotal: 0
-      }
-    ]);
+    console.log(tableData)
+    // Update tableData state and calculate the new total amount
+    setTableData(prevTableData => {
+      // Create the new table data with the added row
+      const newTableData = [
+        ...prevTableData,
+        {
+          id: 0,
+          codeOperation: '',
+          libelle: '',
+          compte: '',
+          TVA: '',
+          ligneBudgetaire: '',
+          nature: '',
+          amputationComplementaire1: '',
+          amputationComplementaire2: '',
+          destination: '',
+          montantU: 0,
+          qte: 0,
+          montantTotal: 0
+        }
+      ];
+  
+      // Update formData with the new total amount
+      setFormData(prevFormData => ({
+        ...prevFormData,
+        montant: calculateTotal(newTableData) // Calculate total based on the new data
+      }));
+      console.log(formData.montant)
+  
+      return newTableData;
+    });
   };
+  
 
   const handleDeleteRow = async(index) => {
+    if(tableData[index].id){
     const response = await fetch('/api/deletedata', {
         method: 'DELETE',
         headers: {
@@ -116,7 +133,7 @@ export default function ModifierFacture() {
           id: tableData[index].id,  // The id of the row you want to delete
         }),
       });
-      
+    } 
     const newTableData = tableData.filter((_, i) => i !== index);
 
     setTableData(newTableData);
@@ -125,7 +142,7 @@ export default function ModifierFacture() {
 
   const handleSubmit = async (e) => {
     
-    await handleModifier(e, formData, searchQuery, tableData, setFormError, router);
+    await handleModifier(e, formData, params.id, tableData, setFormError, router);
   }
       
   
@@ -167,34 +184,19 @@ export default function ModifierFacture() {
 
   
   const [searchQuery, setSearchQuery] = useState('');
-  const handleInputChange = (e) => {
-    setSearchQuery(e.target.value); // Update search query on input change
-  };
+useEffect(() => {
+     setSearchQuery(params.id);
+    handleEdit(params.id, setFormData, setTableData);
+
+},[params.id])
+     // Update search query on input change
+  
 
   
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
-      {isSearch ? (
-                    <>
-                        <h1 className="text-2xl font-semibold mb-4">Rechercher une facture</h1>
-                        <div className="flex items-center justify-center space-x-2">
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={handleInputChange}
-                                placeholder="Search..."
-                                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                onClick={(e) => handleSearch(e, searchQuery, setFormData, setTableData, setIsSearch)}
-                                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none"
-                            >
-                                Search
-                            </button>
-                        </div>
-                    </>
-                ):(<>
+      <>
       
       <h1 className="text-2xl font-bold mb-4">Modifier une facture</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -565,7 +567,7 @@ export default function ModifierFacture() {
           Modifier et Enregistrer
         </button>
       </form>
-      </>)}
+      </>
     </div>
   )
   }

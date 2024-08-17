@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import Link from 'next/link';
 
 const FactureCard = ({ facture }) => {
   let {
@@ -64,20 +65,25 @@ const FactureCard = ({ facture }) => {
   };
 
   return (
-      <div className="bg-white shadow-lg rounded-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow mb-6">
-        <h1 className="text-2xl font-bold text-primary mb-3">{intitule}</h1>
-        <h2 className="text-xl font-semibold text-secondary mb-4">Facture ID: {id}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <p><strong>Type de Facture:</strong> {getTypeFactureLabel(type_facture)}</p>
-          <p><strong>Numéro Facture:</strong> {reference_facture}</p>
-          <p><strong>Date:</strong> {new Date(date).toLocaleDateString('fr-FR')}</p>
-          <p><strong>Montant Total:</strong> {montant} DZD</p>
-          <p><strong>Mode de Règlement:</strong> {mod_reg}</p>
-          <p><strong>Gestionnaire:</strong> {gest}</p>
-          <p><strong>Type de Saisie:</strong> {getTypeSaisieLabel(type_saisie)}</p>
-          <p><strong>Statut:</strong> {getStatusLabel(etat)}</p>
-        </div>
+    <div className="bg-white shadow-lg rounded-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow mb-6">
+      <h1 className="text-2xl font-bold text-primary mb-3">{intitule}</h1>
+      <h2 className="text-xl font-semibold text-secondary mb-4">Facture ID: {id}</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <p><strong>Type de Facture:</strong> {getTypeFactureLabel(type_facture)}</p>
+        <p><strong>Numéro Facture:</strong> {reference_facture}</p>
+        <p><strong>Date:</strong> {new Date(date).toLocaleDateString('fr-FR')}</p>
+        <p><strong>Montant Total:</strong> {montant} DZD</p>
+        <p><strong>Mode de Règlement:</strong> {mod_reg}</p>
+        <p><strong>Gestionnaire:</strong> {gest}</p>
+        <p><strong>Type de Saisie:</strong> {getTypeSaisieLabel(type_saisie)}</p>
+        <p><strong>Statut:</strong> {getStatusLabel(etat)}</p>
       </div>
+      <Link href={`./facture/${id}`}>
+        <div className="mt-4 inline-block bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition-colors">
+          Modify
+        </div>
+      </Link>
+    </div>
   );
 };
 
