@@ -458,7 +458,7 @@ useEffect(() => {
                   <input
                     type="text"
                     name="codeOperation"
-                    value={row.codeOperation}
+                    value={row.codeOperation|''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -467,7 +467,7 @@ useEffect(() => {
                   <input
                     type="text"
                     name="libelle"
-                    value={row.libelle}
+                    value={row.libelle|''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -476,7 +476,7 @@ useEffect(() => {
                   <input
                     type="text"
                     name="compte"
-                    value={row.compte}
+                    value={row.compte||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -485,7 +485,7 @@ useEffect(() => {
                   <input
                     type="text"
                     name="TVA"
-                    value={row.TVA}
+                    value={row.TVA||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -494,7 +494,7 @@ useEffect(() => {
                   <input
                     type="text"
                     name="ligneBudgetaire"
-                    value={row.ligneBudgetaire}
+                    value={row.ligneBudgetaire||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -503,7 +503,7 @@ useEffect(() => {
                   <input
                     type="text"
                     name="nature"
-                    value={row.nature}
+                    value={row.nature||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -514,7 +514,7 @@ useEffect(() => {
                   <input
                     type="number"
                     name="montantU"
-                    value={row.montantU}
+                    value={row.montantU||0}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -523,7 +523,7 @@ useEffect(() => {
                   <input
                     type="number"
                     name="qte"
-                    value={row.qte}
+                    value={row.qte||0}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
