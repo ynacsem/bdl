@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+button{
+  @apply  text-black font-bold m-10 rounded-full;
+}
+.clr1{
+  color: #fdb713;
+  color: #6f42c1;
+}
