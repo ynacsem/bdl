@@ -2,15 +2,18 @@
 import Nav from "@/components/nav";
 import { fetchAllFactures } from "@/utils/fetch";
 import { useEffect, useState } from "react";
-import FactureCard from "@/components/FactCard"; // Ensure FactureCard is imported
+import FactureCard from "@/components/FactCard";
+import { useSession } from "next-auth/react"; // Ensure FactureCard is imported
 
 export default function Home() {
+    const { data: session } = useSession();
     const [factures, setFactures] = useState([]);
     const [filteredFactures, setFilteredFactures] = useState([]);
     const [searchId, setSearchId] = useState('');
     const [searchIntitule, setSearchIntitule] = useState('');
     const [selectedTypeFacture, setSelectedTypeFacture] = useState('');
     const [error, setError] = useState(null);
+    const previleges = session?.user?.previleges;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -53,9 +56,18 @@ export default function Home() {
         setSelectedTypeFacture(event.target.value);
     };
 
+    if (!session) {
+        return <p>Loading...</p>;
+    }
     return (
         <>
             <Nav />
+            <h1 className="text-3xl font-bold mb-4">{session.user.email||'Unknown'}</h1>
+            <ul>
+                <li>Admin: {previleges.admin ? 'Yes' : 'No'}</li>
+                <li>Prev1: {previleges.prev1 ? 'Yes' : 'No'}</li>
+                <li>Prev2: {previleges.prev2 ? 'Yes' : 'No'}</li>
+            </ul>
             <div className="p-4">
                 {error && <p className="text-red-500">{error}</p>}
                 <div className="mb-4">

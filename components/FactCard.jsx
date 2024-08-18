@@ -1,8 +1,10 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 const FactureCard = ({ facture }) => {
+  const { data: session } = useSession();
   let {
     id,
     intitule,
@@ -78,11 +80,14 @@ const FactureCard = ({ facture }) => {
         <p><strong>Type de Saisie:</strong> {getTypeSaisieLabel(type_saisie)}</p>
         <p><strong>Statut:</strong> {getStatusLabel(etat)}</p>
       </div>
-      <Link href={`./facture/${id}`}>
+      {session.user.previleges.admin && (
+        <Link href={`./facture/${id}`}>
         <div className="mt-4 inline-block bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition-colors">
           Modify
         </div>
       </Link>
+      )}
+      
     </div>
   );
 };

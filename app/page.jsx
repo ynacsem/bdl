@@ -1,23 +1,14 @@
-import Link from 'next/link';
+// pages/index.jsx
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function Home() {
-  return (
-    <div className="flex flex-col space-y-4 p-4">
-      <Link href="/facture">
-       
-          Saisie facture
-        
-      </Link>
-      <Link href="/saisieAcompte">
-       
-          Saisie acompte
-        
-      </Link>
-      <Link href="/saisieAvoir">
-        
-          Saisie avoir
-        
-      </Link>
-    </div>
-  );
+export default function HomePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push('/login');
+  }, [router]);
+
+  return null; // No content needed as we are redirecting
 }
