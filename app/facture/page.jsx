@@ -3,10 +3,12 @@ import Nav from "@/components/nav";
 import { fetchAllFactures } from "@/utils/fetch";
 import { useEffect, useState } from "react";
 import FactureCard from "@/components/FactCard";
-import { useSession } from "next-auth/react"; // Ensure FactureCard is imported
+import { useSession } from "next-auth/react";
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
+    const router = useRouter();
     const [factures, setFactures] = useState([]);
     const [filteredFactures, setFilteredFactures] = useState([]);
     const [searchId, setSearchId] = useState('');
@@ -15,7 +17,21 @@ export default function Home() {
     const [error, setError] = useState(null);
     const previleges = session?.user?.previleges;
 
+    // Loading state to handle session check delay
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
+        if (status === 'loading') {
+            // Wait for the session status to resolve
+            return;
+        }
+
+        if (!session) {
+            // Redirect to login if not authenticated
+            router.push('/login');
+            return;
+        }
+
         const fetchData = async () => {
             try {
                 const data = await fetchAllFactures(); // Fetch without filters
@@ -29,7 +45,8 @@ export default function Home() {
         };
 
         fetchData();
-    }, []); // Empty dependency array ensures this runs only once on component mount
+        setLoading(false); // Data fetching is complete
+    }, [session, status, router]); // Include status in dependencies
 
     useEffect(() => {
         // Filter factures based on search inputs
@@ -56,13 +73,14 @@ export default function Home() {
         setSelectedTypeFacture(event.target.value);
     };
 
-    if (!session) {
-        return <p>Loading...</p>;
+    if (loading) {
+        return <p>Loading...</p>; // Display loading indicator while waiting for session status
     }
+
     return (
         <>
             <Nav />
-            <h1 className="text-3xl font-bold mb-4">{session.user.email||'Unknown'}</h1>
+            <h1 className="text-3xl font-bold mb-4">{session.user.email || 'Unknown'}</h1>
             <ul>
                 <li>Admin: {previleges.admin ? 'Yes' : 'No'}</li>
                 <li>Prev1: {previleges.prev1 ? 'Yes' : 'No'}</li>

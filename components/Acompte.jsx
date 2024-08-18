@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import SaisieAcompte from '../../components/Acomptetet'; // Adjust import path as needed
-import SaisieRemboursement from '../../components/Remboursement'; // Adjust import path as needed
+import SaisieAcompte from './Acomptetet'; // Adjust import path as needed
+import SaisieRemboursement from './Remboursement'; // Adjust import path as needed
 import { handleAcompteSubmit, handleRemboursementSubmit } from '@/utils/acompte/handleSubmit'; // Adjust import path as needed
 
 export default function Acompte() {

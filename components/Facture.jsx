@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { handleSubmit } from '@/utils/handleSubmit';
 import { uploadFile } from '@/utils/fileupload';
 
-export default function SaisieFacture() {
+export default function SaisieFacture(props) {
   const router = useRouter()
   const [suppliers, setSuppliers] = useState([]);
   const [gest, setGest] = useState([]);
@@ -16,7 +16,7 @@ export default function SaisieFacture() {
     date: new Date().toISOString().split('T')[0],
     gest: '',
     observations: '',
-    type_facture: '', // New field
+    type_facture: props.type, // New field
     type_saisie:'', // New field
     stru_ord: '', // New field
     stru_dest: '', // New field
@@ -324,21 +324,7 @@ export default function SaisieFacture() {
             />
           </div>
         </div>
-        <div>
-    <label htmlFor="type_facture" className="block">Type de Facture</label>
-    <select
-      id="type_facture"
-      name="type_facture"
-      value={formData.type_facture}
-      onChange={handleChange}
-      className="w-full border p-2 rounded"
-    >
-      <option value="" disabled>Sélectionner un type</option>
-      <option value={1}>Facture Fournisseur</option>
-      <option value={2}>Facture Salarié</option>
-      <option value={3}>Facture Client</option>
-    </select>
-  </div>
+        
 
   <div>
     <label htmlFor="type_saisie" className="block">Type de Saisie</label>
