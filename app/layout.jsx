@@ -5,6 +5,8 @@ import './globals.css';
 
 import NextAuthSessionProvider from "./nextauth/NextAuthSessionProvider";
 
+
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -17,6 +19,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <NextAuthSessionProvider>
+          
           {children}
         </NextAuthSessionProvider>
       </body>

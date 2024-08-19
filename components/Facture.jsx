@@ -8,7 +8,7 @@ import { uploadFile } from '@/utils/fileupload';
 export default function SaisieFacture(props) {
   const router = useRouter()
   const [suppliers, setSuppliers] = useState([]);
-  const [gest, setGest] = useState([]);
+  const [struct, setStruct] = useState([]);
   const [formData, setFormData] = useState({
     intitule: '',
     id_fournisseur: '',
@@ -134,9 +134,9 @@ export default function SaisieFacture(props) {
     fetchSuppliers();
   }, []);
 
-  const fetchGest = async () => {
-    const fields = 'nom';
-    const table = 'gestionnaire';
+  const fetchStruct = async () => {
+    const fields = 'libelle';
+    const table = 'structure';
     const filters = '';
   
     const query = new URLSearchParams({ fields, table, filters }).toString();
@@ -146,7 +146,7 @@ export default function SaisieFacture(props) {
       const response = await fetch(url);
       const result = await response.json();
       if (result.results && result.results.length > 0) {
-        setGest(result.results);
+        setStruct(result.results);
       } else {
         console.warn('No gestionaires found.');
       }
@@ -156,7 +156,7 @@ export default function SaisieFacture(props) {
   };
 
   useEffect(() => {
-    fetchGest();
+    fetchStruct();
   }, []);
   
   const onSubmit = async (e) => {
@@ -294,12 +294,12 @@ export default function SaisieFacture(props) {
               className="w-full border p-2 rounded"
             >
               <option value="" disabled>Sélectionner un gestionnaire</option>
-              {gest
+              {/* {gest
                 .map((g, index) => (
                   <option key={index} value={g.nom}>
                     {g.nom}
                   </option>
-                ))}
+                ))} */}
             </select>
           </div>
           
@@ -345,7 +345,7 @@ export default function SaisieFacture(props) {
   </div>
 
   <div>
-    <label htmlFor="structure_ordonnatrice" className="block">Structure Ordonnatrice</label>
+    <label htmlFor="structure_ord" className="block">Structure Ordonnatrice</label>
     <select
       id="structure_ordonnatrice"
       name="stru_ord"
@@ -354,7 +354,10 @@ export default function SaisieFacture(props) {
       className="w-full border p-2 rounded"
     >
       <option value="" disabled>Sélectionner une structure</option>
-      {/* Populate options from your database */}
+      {struct.map((s, index) => (
+        <option key={index} value={s.libelle}>{s.libelle}
+        </option>
+      ))}
     </select>
   </div>
 
@@ -368,7 +371,10 @@ export default function SaisieFacture(props) {
       className="w-full border p-2 rounded"
     >
       <option value="" disabled>Sélectionner une structure</option>
-      {/* Populate options from your database */}
+      {struct.map((s, index) => (
+        <option key={index} value={s.libelle}>{s.libelle}
+        </option>
+      ))}
     </select>
   </div>
 

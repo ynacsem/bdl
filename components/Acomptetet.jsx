@@ -1,84 +1,101 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { handleSubmit } from '@/utils/acompte/handleSubmit';
 
 export default function SaisieAcompte({ formData, onChange }) {
-  const router = useRouter();
   const [suppliers, setSuppliers] = useState([]);
-  const [gest, setGest] = useState([]);
-  const [showSecondPart, setShowSecondPart] = useState(false); // Control display of the second part
-  const [formData1, setFormData1] = useState({
-    type_facture: '',
-    id_fournisseur: '',
-    id_fact: '',
-    stru_ord: '',
-    stru_dest: '',
-    libelle_acompte: '',
-    date: new Date().toISOString().split('T')[0],
-    numacmpt: '',
-    montant: '',
-    observations: '',
-    dateacmpt: '',
-    gest: '',
-  });
+  const [struct, setStruct] = useState([]);
 
-  const handleChange = async(e) => {
+  // Handle field changes in a way that preserves the rest of the form data
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    await setFormData1({ ...formData1, [name]: value });
-    onChange({ ...formData1, [name]: value });
+    const updatedFormData = { ...formData, [name]: value }; // Copy existing data and update the specific field
+    onChange(updatedFormData); // Call the parent's onChange handler with updated data
   };
-  
+
+  const fetchStruct = async () => {
+    const fields = 'libelle';
+    const table = 'structure';
+    const filters = '';
+
+    const query = new URLSearchParams({ fields, table, filters }).toString();
+    const url = `/api/getdata?${query}`;
+
+    try {
+      const response = await fetch(url);
+      const result = await response.json();
+      if (result.results && result.results.length > 0) {
+        setStruct(result.results);
+      } else {
+        console.warn('No structures found.');
+      }
+    } catch (error) {
+      console.error('Error fetching structures:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStruct();
+  }, []);
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Saisie Acompte</h1>
       <div className="space-y-4">
+        {/* Form Fields */}
         <div className="space-y-2">
-          {/* First Part */}
+          {/* Other fields */}
           <div>
             <label htmlFor="type_facture" className="block">Type de Facture</label>
             <select
               id="type_facture"
               name="type_facture"
-              value={formData.type_facture}
+              value={formData.type_facture || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             >
               <option value="" disabled>Sélectionner un type</option>
-              <option value="fournisseur">Fournisseur</option>
-              <option value="client">Client</option>
+              <option value={1}>Fournisseur</option>
+              <option value={2}>Client</option>
             </select>
           </div>
           <div>
             <label htmlFor="stru_ord" className="block">Structure Ordonnatrice</label>
-            <input
-              type="text"
+            <select
               id="stru_ord"
               name="stru_ord"
-              value={formData.stru_ord}
+              value={formData.stru_ord || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
-            />
+            >
+              <option value="" disabled>Sélectionner une structure</option>
+              {struct.map((s, index) => (
+                <option key={index} value={s.libelle}>{s.libelle}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label htmlFor="stru_dest" className="block">Structure Destinataire</label>
-            <input
-              type="text"
+            <select
               id="stru_dest"
               name="stru_dest"
-              value={formData.stru_dest||''}
+              value={formData.stru_dest || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
-            />
+            >
+              <option value="" disabled>Sélectionner une structure</option>
+              {struct.map((s, index) => (
+                <option key={index} value={s.libelle}>{s.libelle}</option>
+              ))}
+            </select>
           </div>
+          {/* Additional fields */}
           <div>
             <label htmlFor="libelle_acompte" className="block">Libellé d'Acompte</label>
             <input
               type="text"
               id="libelle_acompte"
               name="libelle_acompte"
-              value={formData.libelle_acompte||''}
+              value={formData.libelle_acompte || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
@@ -89,7 +106,7 @@ export default function SaisieAcompte({ formData, onChange }) {
               type="number"
               id="montant"
               name="montant"
-              value={formData.montant||''}
+              value={formData.montant || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
@@ -99,7 +116,7 @@ export default function SaisieAcompte({ formData, onChange }) {
             <select
               id="id_fournisseur"
               name="id_fournisseur"
-              value={formData.id_fournisseur||''}
+              value={formData.id_fournisseur || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             >
@@ -117,7 +134,7 @@ export default function SaisieAcompte({ formData, onChange }) {
               type="text"
               id="id_fact"
               name="id_fact"
-              value={formData.id_fact||''}
+              value={formData.id_fact || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
@@ -128,7 +145,7 @@ export default function SaisieAcompte({ formData, onChange }) {
               type="date"
               id="date"
               name="date"
-              value={formData.date}
+              value={formData.date || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
@@ -139,7 +156,7 @@ export default function SaisieAcompte({ formData, onChange }) {
               type="text"
               id="numacmpt"
               name="numacmpt"
-              value={formData.numacmpt}
+              value={formData.numacmpt || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
@@ -149,7 +166,7 @@ export default function SaisieAcompte({ formData, onChange }) {
             <textarea
               id="observations"
               name="observations"
-              value={formData.observations}
+              value={formData.observations || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
@@ -160,7 +177,7 @@ export default function SaisieAcompte({ formData, onChange }) {
               type="date"
               id="dateacmpt"
               name="dateacmpt"
-              value={formData.dateacmpt}
+              value={formData.dateacmpt || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
@@ -170,21 +187,15 @@ export default function SaisieAcompte({ formData, onChange }) {
             <select
               id="gest"
               name="gest"
-              value={formData.gest}
+              value={formData.gest || ''}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             >
               <option value="" disabled>Sélectionner un gestionnaire</option>
-              {gest.map((g, index) => (
-                <option key={index} value={g.IDgest}>
-                  {g.Name}
-                </option>
-              ))}
+              {/* Populate with actual data when available */}
             </select>
           </div>
-              
         </div>
-          
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ export default function ModifierFacture({params}) {
   
     
   const [suppliers, setSuppliers] = useState([]);
-  const [gest, setGest] = useState([]);
+  const [struct, setStruct] = useState([]);
   const [formData, setFormData] = useState({
     intitule: '',
     id_fournisseur: '',
@@ -190,7 +190,30 @@ useEffect(() => {
 
 },[params.id])
      // Update search query on input change
+     const fetchStruct = async () => {
+      const fields = 'libelle';
+      const table = 'structure';
+      const filters = '';
+    
+      const query = new URLSearchParams({ fields, table, filters }).toString();
+      const url = `/api/getdata?${query}`;
+    
+      try {
+        const response = await fetch(url);
+        const result = await response.json();
+        if (result.results && result.results.length > 0) {
+          setStruct(result.results);
+        } else {
+          console.warn('No gestionaires found.');
+        }
+      } catch (error) {
+        console.error('Error fetching gestionaires:', error);
+      }
+    };
   
+    useEffect(() => {
+      fetchStruct();
+    }, []);
 
   
 
@@ -272,12 +295,12 @@ useEffect(() => {
               className="w-full border p-2 rounded"
             >
               <option value="" disabled>Sélectionner un gestionnaire</option>
-              {gest
+              {/* {gest
                 .map((g, index) => (
                   <option key={index} value={g.nom}>
                     {g.nom}
                   </option>
-                ))}
+                ))} */}
             </select>
           </div>
           
@@ -347,7 +370,10 @@ useEffect(() => {
       className="w-full border p-2 rounded"
     >
       <option value="" disabled>Sélectionner une structure</option>
-      {/* Populate options from your database */}
+      {struct.map((s, index) => (
+        <option key={index} value={s.libelle}>{s.libelle}
+        </option>
+      ))}
     </select>
   </div>
 
@@ -361,7 +387,10 @@ useEffect(() => {
       className="w-full border p-2 rounded"
     >
       <option value="" disabled>Sélectionner une structure</option>
-      {/* Populate options from your database */}
+      {struct.map((s, index) => (
+        <option key={index} value={s.libelle}>{s.libelle}
+        </option>
+      ))}
     </select>
   </div>
 

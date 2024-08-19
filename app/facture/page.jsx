@@ -5,12 +5,16 @@ import { useEffect, useState } from "react";
 import FactureCard from "@/components/FactCard";
 import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
+import { fetchAllAcomptes } from "@/utils/acompte/fetch";
+import AcompteCard from "@/components/AcompteCard";
 
 export default function Home() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const [acomptes, setAcomptes] = useState([]);
     const [factures, setFactures] = useState([]);
     const [filteredFactures, setFilteredFactures] = useState([]);
+    const [filteredAcomptes, setFilteredAcomptes] = useState([]);
     const [searchId, setSearchId] = useState('');
     const [searchIntitule, setSearchIntitule] = useState('');
     const [selectedTypeFacture, setSelectedTypeFacture] = useState('');
@@ -38,10 +42,14 @@ export default function Home() {
                 console.log("Fetched Data:", data); // Log the fetched data
                 setFactures(data);
                 setFilteredFactures(data); // Initialize filteredFactures
+                const acomptesData = await fetchAllAcomptes();
+                setAcomptes(acomptesData);
+                setFilteredAcomptes(acomptesData);
             } catch (err) {
                 setError('Failed to fetch data');
                 console.error('Fetch Error:', err);
             }
+            
         };
 
         fetchData();
@@ -58,8 +66,16 @@ export default function Home() {
             (searchIntitule === '' || facture.intitule.toLowerCase().includes(lowercasedSearchIntitule)) &&
             (selectedTypeFacture === '' || facture.type_facture === parseInt(selectedTypeFacture))
         );
+        filtered.reverse();
         setFilteredFactures(filtered);
-    }, [searchId, searchIntitule, selectedTypeFacture, factures]);
+        const filteredAcc = acomptes.filter(acc => 
+            (searchId === '' || acc.id.toString().includes(lowercasedSearchId)) &&
+            (searchIntitule === '' || acc.libelle_acompte.toLowerCase().includes(lowercasedSearchIntitule)) &&
+            (selectedTypeFacture === '' || acc.type_facture === parseInt(selectedTypeFacture))
+        );
+        filteredAcc.reverse();
+        setFilteredAcomptes(filteredAcc);
+    }, [searchId, searchIntitule, selectedTypeFacture, factures,acomptes]);
 
     const handleIdChange = (event) => {
         setSearchId(event.target.value);
@@ -80,12 +96,8 @@ export default function Home() {
     return (
         <>
             <Nav />
-            <h1 className="text-3xl font-bold mb-4">{session.user.email || 'Unknown'}</h1>
-            <ul>
-                <li>Admin: {previleges.admin ? 'Yes' : 'No'}</li>
-                <li>Prev1: {previleges.prev1 ? 'Yes' : 'No'}</li>
-                <li>Prev2: {previleges.prev2 ? 'Yes' : 'No'}</li>
-            </ul>
+            
+            
             <div className="p-4">
                 {error && <p className="text-red-500">{error}</p>}
                 <div className="mb-4">
@@ -114,16 +126,24 @@ export default function Home() {
                         <option value="3">Facture Clients</option>
                     </select>
                 </div>
-                {filteredFactures.length > 0 ? (
+                
+                    <div>
+                        {/* Map through filteredAcomptes and render AcompteCard components */}
+                        {filteredAcomptes.map((acompte) => (
+                            <AcompteCard key={acompte.id} acompte={acompte} />
+                        ))}
+                    </div>
+                
+                
                     <div>
                         {/* Map through filteredFactures and render FactureCard components */}
                         {filteredFactures.map((facture) => (
                             <FactureCard key={facture.id} facture={facture} />
                         ))}
                     </div>
-                ) : (
-                    <p>No factures found</p>
-                )}
+               
+                    
+                
             </div>
         </>
     );

@@ -25,8 +25,8 @@ export default function SaisieRemboursement({ formData, onChange }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData1({ ...formData1, [name]: value });
-    onChange({ ...formData1, [name]: value });
+    const updatedFormData = { ...formData, [name]: value }; // Copy existing data and update the specific field
+    onChange(updatedFormData); // Call the parent's onChange handler with updated data
   };
 
   

@@ -1,12 +1,15 @@
 'use client';
 import React, { useState } from 'react';
-import SaisieAcompte from './Acomptetet'; // Adjust import path as needed
-import SaisieRemboursement from './Remboursement'; // Adjust import path as needed
-import { handleAcompteSubmit, handleRemboursementSubmit } from '@/utils/acompte/handleSubmit'; // Adjust import path as needed
-import {useRouter} from 'next/navigation';
+import SaisieAcompte from '@/components/Acomptetet'; // Adjust import path as needed
+import SaisieRemboursement from '@/components/Remboursement'; // Adjust import path as needed // Adjust import path as needed
+import { useRouter } from 'next/navigation';
+import { handleSearch } from '@/utils/acompte/handleSearch';
+import { useEffect } from 'react';
+import { handleModifier } from '@/utils/acompte/handleModifier';
 
-export default function Acompte() {
-  const router = useRouter();
+export default function Acompte({params}) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const router = useRouter();
   let [formDataAcompte, setFormDataAcompte] = useState({
     // Initial state for SaisieAcompte
   });
@@ -31,6 +34,7 @@ export default function Acompte() {
     try {
       // Convert formDataAcompte according to table schema
       const convertedFormDataAcompte = {
+        id: params.id,
         type_facture: formDataAcompte.type_facture, // Convert to integer
         id_fournisseur: parseInt(formDataAcompte.id_fournisseur, 10), // Convert to integer
         id_fact: parseInt(formDataAcompte.id_fact, 10), // Convert to integer
@@ -47,14 +51,14 @@ export default function Acompte() {
       console.log(convertedFormDataAcompte)
   
       // Submit SaisieAcompte form
-      let id_acompte = await handleAcompteSubmit(convertedFormDataAcompte);
-      alert(`Acompte ${id_acompte} created successfully!`);
+      let id_acompte = params.id;
       // Update formDataRemboursement with the new id_acompte
       setFormDataRemboursement({ ...formDataRemboursement, id_acompte: id_acompte });
       console.log(formDataRemboursement)
-  
+      let idRemboursement = formDataRemboursement.id
       // Convert formDataRemboursement according to its schema (similar to `formDataAcompte`)
       const convertedFormDataRemboursement = {
+        id: idRemboursement,
         id_acompte: id_acompte, // Use the ID from the acompte submission
         gestionnaire_bap: formDataRemboursement.gestionnaire_bap,
         solde_a_encaisser: formDataRemboursement.solde_a_encaisser,
@@ -71,20 +75,24 @@ export default function Acompte() {
       };
       console.log(convertedFormDataRemboursement)
       // Submit SaisieRemboursement form
-      await handleRemboursementSubmit(convertedFormDataRemboursement);
+      await handleModifier(e, convertedFormDataAcompte,convertedFormDataRemboursement, router);
   
       console.log('Both forms submitted successfully');
-
-      router.push('/facture');
+      router.push('/facture'); // Redirect to /facture
     } catch (error) {
       console.error('Error submitting forms:', error);
     }
   };
-  
+  useEffect(() => {
+    setSearchQuery(params.id);
+   handleSearch(params.id, setFormDataAcompte, setFormDataRemboursement);
+
+},[params.id])
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-4">
+        
         <SaisieAcompte
           formData={formDataAcompte}
           onChange={handleAcompteChange}
@@ -97,7 +105,7 @@ export default function Acompte() {
           type="submit"
           className="bg-green-500 text-white rounded px-4 py-2 mt-4"
         >
-          Enregistrer
+          Enregister
         </button>
       </form>
     </div>
