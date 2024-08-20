@@ -122,8 +122,8 @@ export default function Home() {
                     >
                         <option value="">All Types</option>
                         <option value="1">Facture Fournisseur</option>
-                        <option value="2">Facture Salariés</option>
-                        <option value="3">Facture Clients</option>
+                        <option value="2">Facute Clients</option>
+                        <option value="3">Facture Salariés</option>
                     </select>
                 </div>
                 

@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation'
 import { handleSubmit } from '@/utils/handleSubmit';
 import { uploadFile } from '@/utils/fileupload';
-
+import { fetchLign } from '@/utils/fetch';
 export default function SaisieFacture(props) {
+  const [files, setFiles] = useState([]); 
   const router = useRouter()
   const [suppliers, setSuppliers] = useState([]);
   const [struct, setStruct] = useState([]);
+  const [lib,setLib] = useState([])
   const [formData, setFormData] = useState({
     intitule: '',
     id_fournisseur: '',
@@ -34,7 +36,6 @@ export default function SaisieFacture(props) {
       libelle: '',
       compte: '',
       codeTVA: '',
-      ligneBudgetaire: '',
       nature: '',
       montantUnitaireHT: 0,
       quantite: 0,
@@ -45,7 +46,7 @@ export default function SaisieFacture(props) {
   const [formError, setFormError] = useState('');
   const [tableError, setTableError] = useState('');
 
-  const handleChange = (e) => {
+  const handleChange = async(e) => {
     const { name, value, type, files } = e.target;
     
   
@@ -54,6 +55,7 @@ export default function SaisieFacture(props) {
     } else {
       setFormData({ ...formData, [name]: value });
     }
+    
   };
   
 
@@ -65,6 +67,13 @@ export default function SaisieFacture(props) {
     if (name === 'montantU' || name === 'qte') {
       newTableData[index].montantTotal = (parseFloat(newTableData[index].montantU || 0) * parseFloat(newTableData[index].qte|| 0)).toFixed(2);
      
+    }
+    if(name ==='libelle'){
+      const data = await fetchLign(value,false,true);
+      
+      const newData = data.results[0];
+      console.log(newData)
+      newTableData[index] = {...newTableData[index], codeOperation: newData.cod_op,  nature: newData.type,compte:newData.compte};
     }
 
      setTableData(newTableData);
@@ -79,7 +88,6 @@ export default function SaisieFacture(props) {
         libelle: '',
         compte: '',
         TVA: '',
-        ligneBudgetaire: '',
         nature: '',
         amputationComplementaire1: '',
         amputationComplementaire2: '',
@@ -96,10 +104,34 @@ export default function SaisieFacture(props) {
     setTableData(newTableData);
     setFormData({ ...formData, montant: calculateTotal(newTableData) });
   };
+ 
 
   
   
-  
+  const uploadFiles = async (apiUrl, factureId, files) => {
+    try {
+        const formData = new FormData();
+        formData.append('facture_id', factureId);
+        files.forEach((file) => {
+            formData.append('file_data', file);
+        });
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Error uploading files:', error);
+        throw error;
+    }
+};
   
 
   const calculateTotal = (data) => {
@@ -131,8 +163,20 @@ export default function SaisieFacture(props) {
   };
 
   useEffect(() => {
-    fetchSuppliers();
+    const fetchData = async () => {
+      try {
+        const res = await fetchLign('','',false);
+        setLib(res.results);
+        console.log(res.results);
+        await fetchSuppliers(); // Assuming fetchSuppliers is async and should be awaited
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+  
+    fetchData();
   }, []);
+  
 
   const fetchStruct = async () => {
     const fields = 'libelle';
@@ -162,51 +206,50 @@ export default function SaisieFacture(props) {
   const onSubmit = async (e) => {
     e.preventDefault(); // Prevent form submission
 
-    let file = document.getElementById('file').files[0];
-    if (file) {
-        try {
-            // Upload file first
-            const newformData = new FormData();
-            newformData.append('file', file);
-
-            const response = await fetch('/api/uploadfile', {
-                method: 'POST',
-                body: newformData,
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to upload file');
-            }
-
-            const result = await response.json();
-
-            if (result.success && result.fileId) { // Use 'fileId' from result
-                setFormData((prevData) => ({
-                    ...prevData,
-                    file_id: result.fileId, // Store file ID for further processing
-                }));
-
-                // Wait until file_id is set before continuing
-                await handleSubmit(e, {
-                    ...formData,
-                    file_id: result.fileId
-                }, tableData, router, setFormError);
-            } else {
-                throw new Error('File upload failed');
-            }
-        } catch (error) {
-            console.error('Error uploading file:', error);
-            setStatus(`Error: ${error.message}`);
-        }
-    } else {
+    
         // If no file is being uploaded, just submit the form
-        await handleSubmit(e, formData, tableData, router, setFormError);
-    }
+    let id_fact = await handleSubmit(e, formData, tableData, router, setFormError);
+    
+    const apiUrl = 'http://localhost:3000/api/uploadfile'; // Replace with your API endpoint
+
+        try {
+            const result = await uploadFiles(apiUrl, id_fact, files);
+            console.log('Upload successful:', result);
+        } catch (error) {
+            console.error('Upload failed:', error);
+        }
 };
 
 
+const handleFileSelect = (e) => {
+  const selectedFiles = Array.from(e.target.files);
+  setFiles((prevFiles) => {
+      // Create a Map to handle unique files based on their names
+      const fileMap = new Map(prevFiles.map((file) => [file.name, file]));
+      selectedFiles.forEach((file) => fileMap.set(file.name, file));
+      return Array.from(fileMap.values());
+  });
+  e.target.value = ''; // Reset file input value to allow re-selection of the same file
+};
 
+// Handle file removal
+const handleFileRemove = (fileName) => {
+  setFiles((prevFiles) =>
+      prevFiles.filter((file) => file.name !== fileName)
+  );
+};
 
+// Handle file download
+const handleFileDownload = (file) => {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url); // Clean up the URL object
+};
 
 
 
@@ -313,16 +356,67 @@ export default function SaisieFacture(props) {
               className="w-full border p-2 rounded"
             />
           </div>
+          
           <div>
-            <label htmlFor="file" className="block">Scannez ou chargez vos fichiers</label>
-            <input
-              type="file"
-              id="file"
-              name="file"
-              
-               className="w-full border p-2 rounded"
-            />
-          </div>
+        <h3 className="text-xl font-semibold mb-2">
+            Selected Files:
+        </h3>
+        <table className="min-w-full bg-white border border-gray-300 rounded">
+            <thead>
+                <tr className="bg-gray-100 text-sm">
+                    <th className="border-b text-left px-2">
+                        <button
+                            type="button"
+                            onClick={() => document.getElementById('fileInput').click()}
+                            className="bg-blue-500 text-white hover:bg-blue-700 py-1 px-2 rounded"
+                        >
+                            Add Files
+                        </button>
+                        <input
+                            type="file"
+                            id="fileInput"
+                            multiple
+                            onChange={handleFileSelect}
+                            className="hidden"
+                        />
+                    </th>
+                    <th className="py-1 px-2 border-b text-left">File Name</th>
+                    <th className="py-1 px-2 border-b text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {files.length > 0 ? (
+                    files.map((file) => (
+                        <tr key={file.name}>
+                            <td className="py-1 px-2 border-b text-gray-700">{file.name}</td>
+                            <td className="py-1 px-2 border-b">
+                                <button
+                                    onClick={() => handleFileDownload(file)}
+                                    className="bg-blue-500 text-white hover:bg-blue-700 py-1 px-3 rounded mr-2"
+                                >
+                                    View
+                                </button>
+                                <button
+                                    onClick={() => handleFileRemove(file.name)}
+                                    className="bg-red-500 text-white hover:bg-red-700 py-1 px-3 rounded"
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan="3" className="py-2 px-4 text-gray-500 text-center">
+                            No files selected
+                        </td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
+    </div>
+
+
         </div>
         
 
@@ -454,10 +548,9 @@ export default function SaisieFacture(props) {
           <thead>
             <tr>
               <th className="border px-2 py-2">Code Opération</th>
-              <th className="border px-2 py-2">Libellé</th>
+              <th className="border px-8 py-2">Libellé</th>
               <th className="border px-2 py-2">Compte</th>
               <th className="border px-2 py-2">Code TVA</th>
-              <th className="border px-2 py-2">Ligne Budgétaire</th>
               <th className="border px-2 py-2">Nature</th>
               <th className="border px-2 py-2">Montant Unitaire HT</th>
               <th className="border px-2 py-2">Quantité</th>
@@ -472,19 +565,26 @@ export default function SaisieFacture(props) {
                   <input
                     type="text"
                     name="codeOperation"
-                    value={row.codeOperation}
+                    value={row.codeOperation||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
                 </td>
                 <td className="border py-2">
-                  <input
+                  <select
                     type="text"
                     name="libelle"
                     value={row.libelle||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
-                  />
+                  >
+                    <option value="" disabled>Sélectionner un libellé</option>
+                    {lib.map((libelle) => (
+                      <option  value={libelle.libelle}>
+                        {libelle.libelle}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td className="border py-2">
                   <input
@@ -504,15 +604,7 @@ export default function SaisieFacture(props) {
                     className="w-full border p-1 rounded"
                   />
                 </td>
-                <td className="border  py-2">
-                  <input
-                    type="text"
-                    name="ligneBudgetaire"
-                    value={row.ligneBudgetaire||''}
-                    onChange={(e) => handleTableChange(index, e)}
-                    className="w-full border p-1 rounded"
-                  />
-                </td>
+                
                 <td className="border  py-2">
                   <input
                     type="text"

@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation'
 import { handleEdit, handleedit } from '@/utils/handleEdit';
 import { handleModifier } from '@/utils/handlePut';
+import { fetchLign } from '@/utils/fetch';
 
 export default function ModifierFacture({params}) {
   const router = useRouter();
-  
+  const [lib,setLib] = useState([])
     
   const [suppliers, setSuppliers] = useState([]);
   const [struct, setStruct] = useState([]);
@@ -37,7 +38,6 @@ export default function ModifierFacture({params}) {
       libelle: '',
       compte: '',
       codeTVA: '',
-      ligneBudgetaire: '',
       nature: '',
       montantUnitaireHT: 0,
       quantite: 0,
@@ -67,22 +67,23 @@ export default function ModifierFacture({params}) {
   const handleTableChange = async (index, e) => {
     const { name, value } = e.target;
     const newTableData = [...tableData];
-    
-    // Update the specific row in the table data
     newTableData[index] = { ...newTableData[index], [name]: value };
-  
-    // Recalculate montantTotal if montantU or qte are changed
+
     if (name === 'montantU' || name === 'qte') {
-      newTableData[index].montantTotal = (parseFloat(newTableData[index].montantU || 0) * parseFloat(newTableData[index].qte || 0)).toFixed(2);
-      setFormData({ ...formData, montant: calculateTotal(newTableData) });
+      newTableData[index].montantTotal = (parseFloat(newTableData[index].montantU || 0) * parseFloat(newTableData[index].qte|| 0)).toFixed(2);
+     
     }
-  
-    // Update the state with the new table data
-    setTableData(newTableData);
-    
-    // Recalculate and update the formData with the total montant
-    
-  };
+    if(name ==='libelle'){
+      const data = await fetchLign(value,false,true);
+      
+      const newData = data.results[0];
+      console.log(newData)
+      newTableData[index] = {...newTableData[index], codeOperation: newData.cod_op,  nature: newData.type,compte:newData.compte};
+    }
+    console.log(newTableData)
+     setTableData(newTableData);
+     setFormData({...formData,montant:calculateTotal(newTableData)})
+   };
   
 
   const handleAddRow = () => {
@@ -98,10 +99,7 @@ export default function ModifierFacture({params}) {
           libelle: '',
           compte: '',
           TVA: '',
-          ligneBudgetaire: '',
           nature: '',
-          amputationComplementaire1: '',
-          amputationComplementaire2: '',
           destination: '',
           montantU: 0,
           qte: 0,
@@ -214,7 +212,20 @@ useEffect(() => {
     useEffect(() => {
       fetchStruct();
     }, []);
-
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const res = await fetchLign('','',false);
+          setLib(res.results);
+          console.log(res.results);
+          await fetchSuppliers(); // Assuming fetchSuppliers is async and should be awaited
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      };
+    
+      fetchData();
+    }, []);
   
 
   return (
@@ -472,7 +483,6 @@ useEffect(() => {
               <th className="border px-2 py-2">Libellé</th>
               <th className="border px-2 py-2">Compte</th>
               <th className="border px-2 py-2">Code TVA</th>
-              <th className="border px-2 py-2">Ligne Budgétaire</th>
               <th className="border px-2 py-2">Nature</th>
               <th className="border px-2 py-2">Montant Unitaire HT</th>
               <th className="border px-2 py-2">Quantité</th>
@@ -487,19 +497,26 @@ useEffect(() => {
                   <input
                     type="text"
                     name="codeOperation"
-                    value={row.codeOperation|''}
+                    value={row.codeOperation||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
                 </td>
                 <td className="border py-2">
-                  <input
+                <select
                     type="text"
                     name="libelle"
-                    value={row.libelle|''}
+                    value={row.libelle||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
-                  />
+                  >
+                    <option value="" disabled>Sélectionner un libellé</option>
+                    {lib.map((libelle) => (
+                      <option  value={libelle.libelle}>
+                        {libelle.libelle}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td className="border py-2">
                   <input
@@ -519,15 +536,7 @@ useEffect(() => {
                     className="w-full border p-1 rounded"
                   />
                 </td>
-                <td className="border  py-2">
-                  <input
-                    type="text"
-                    name="ligneBudgetaire"
-                    value={row.ligneBudgetaire||''}
-                    onChange={(e) => handleTableChange(index, e)}
-                    className="w-full border p-1 rounded"
-                  />
-                </td>
+                
                 <td className="border  py-2">
                   <input
                     type="text"

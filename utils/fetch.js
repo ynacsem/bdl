@@ -63,19 +63,24 @@ export const fetchLineFact = async (searchQuery) => {
         const response = await fetch(url);
         const result = await response.json();
 
-        // Replace null values with empty strings in the result
+        // Replace null values with empty strings and add code_op field
         const sanitizedTableData = result.results.map((item) =>
             Object.fromEntries(
                 Object.entries(item).map(([key, value]) => [key, value === null ? '' : value])
             )
-        );
+        ).map((item) => ({
+            ...item,
+            codeOperation: '', // Add code_op field with an empty string
+        }));
 
+        console.log(sanitizedTableData);
         return sanitizedTableData;
     } catch (error) {
         console.error('Error fetching ligne_fact:', error);
         throw error; // Propagate error to caller
     }
 };
+
 export const fetchStructure = async () => {
     const field = 'libelle,IDstruct';
     const table = 'structure';
@@ -144,3 +149,28 @@ export const fetchAllFactures = async () => {
         throw error; // Propagate error to caller
     }
 };
+export const fetchLign = async (fil, isOp, isFilter) => {
+    const table = 'lignbbudget';
+    let fields = 'libelle';
+    let filters = '';
+  
+    if (isFilter) {
+      fields = 'libelle,cod_op,compte,type';
+      // Check if `fil` is a string or a number and apply the correct formatting
+      const formattedFil = typeof fil === 'string' ? `'${fil}'` : fil;
+      filters = isOp ? `cod_op = ${formattedFil}` : `libelle = ${formattedFil}`;
+    }
+  
+    const query = new URLSearchParams({ fields, table, filters }).toString();
+    const url = `/api/getdata?${query}`;
+  
+    try {
+      const response = await fetch(url);
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error fetching libelle:', error);
+    }
+  };
+  
+  

@@ -1,29 +1,34 @@
-export const fileUpload = async (file) => {
+async function uploadFiles(apiUrl, factureId, files) {
+    try {
+        // Create a new FormData object
+        const formData = new FormData();
+        
+        // Append facture_id to FormData
+        formData.append('facture_id', factureId);
+        
+        // Append each file to FormData
+        files.forEach((file) => {
+            formData.append('file_data', file);
+        });
 
-    if (file) {
-        try {
-            const formData = new FormData();
-            formData.append('file', file); // Ensure the field name matches
+        // Send POST request to API
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: formData,
+        });
 
-            const response = await fetch('/api/uploadfile', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to upload file');
-            }
-
-            const result = await response.json();
-
-            if (result.success && result.fileId) {
-                return result.fileId;
-            } else {
-                throw new Error('File upload failed');
-            }
-        } catch (error) {
-            console.error('Error uploading file:', error);
-            
+        // Check if the response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        // Parse the JSON response
+        const result = await response.json();
+
+        // Return the result
+        return result;
+    } catch (error) {
+        console.error('Error uploading files:', error);
+        throw error;
     }
-};
+}

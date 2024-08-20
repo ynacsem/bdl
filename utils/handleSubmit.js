@@ -3,6 +3,7 @@ export const handleSubmit = async (e, formData, tableData, router, setFormError)
 
     let { intitule, id_fournisseur, reference_facture, date, gest, observations, type_facture, type_saisie, stru_ord, stru_dest, mod_reg, montant, date_facture,rip,
         num_cheq, etat } = formData;
+    let id_facture
 
     try {
         // Check if montant is defined and convert to string
@@ -45,7 +46,7 @@ export const handleSubmit = async (e, formData, tableData, router, setFormError)
         alert(`Facture ID: ${result.id}`);
 
         await Promise.all(tableData.map(async (line) => {
-            const id_facture = Number(result.id);
+             id_facture = Number(result.id);
             
             // Ensure line properties are defined
             let { libelle = '', montantU = '', TVA = '', qte = '' } = line;
@@ -81,8 +82,9 @@ export const handleSubmit = async (e, formData, tableData, router, setFormError)
                 setFormError('Failed to submit line data. Please try again.');
             }
         }));
-
+        
         router.push('/facture');
+        return id_facture;
 
     } catch (error) {
         console.error('Error submitting data:', error);
