@@ -40,7 +40,7 @@ export const handleEdit = async (searchQuery, setFormData, setTableData) => {
             compte: newData.compte,
             montantTotal: calculateMontantTotal(line) // Add calculated montantTotal
           };
-    
+          console.log('updated lines',updatedLine);
           return updatedLine;
         })
       );

@@ -1,5 +1,5 @@
 export const fetchAcompte = async (searchQuery) => {
-    const field = 'id,type_facture,id_fournisseur,id_fact,stru_ord,stru_dest,libelle_acompte,date,numacmpt,montant,observations,dateacmpt,gest';
+    const field = 'id,type_facture,id_fournisseur,stru_ord,stru_dest,libelle_acompte,date,numacmpt,montant,observations,dateacmpt,gest,date_echeance';
     const table = 'acompte';
     let filters = '';
 
@@ -40,6 +40,7 @@ export const fetchAcompte = async (searchQuery) => {
             ...sanitizedData,
             date: addOneDay(sanitizedData.date),
             dateacmpt: addOneDay(sanitizedData.dateacmpt),
+            date_echeance: addOneDay(sanitizedData.date_echeance),
         };
 
         return sanitizedData;
@@ -49,7 +50,7 @@ export const fetchAcompte = async (searchQuery) => {
     }
 };
 export const fetchAcompteDetails = async (idAcompte) => {
-    const field = 'id,id_acompte,gestionnaire_bap,solde_a_encaisser,date_echeance,date_valuer,date_forcage_remboursement,date_encaissement,num_cheque,ref_pointage,ref_a_rappeler,mode_encaisement,numero,compte';
+    const field = 'id,id_acompte,gestionnaire_bap,solde_a_encaisser,date_valuer,date_forcage_remboursement,date_encaissement,num_cheque,ref_pointage,ref_a_rappeler,mode_encaisement,numero,compte';
     const table = 'remboursement';
     let filters = '';
 
@@ -91,7 +92,6 @@ export const fetchAcompteDetails = async (idAcompte) => {
             date_echeance: addOneDay(sanitizedData.date_echeance),
             date_valuer: addOneDay(sanitizedData.date_valuer),
             date_forcage_remboursement: addOneDay(sanitizedData.date_forcage_remboursement),
-            date_encaissement: addOneDay(sanitizedData.date_encaissement),
         };
         console.log(sanitizedData)
         return sanitizedData;
@@ -144,5 +144,36 @@ export const fetchAllAcomptes = async () => {
     } catch (error) {
         console.error('Error fetching all factures:', error);
         throw error; // Propagate error to caller
+    }
+}
+export const fetchFilesByAcompteId = async(acompteId)=> {
+    try {
+        // Construct the URL with acompte_id
+        const response = await fetch(`/api/getfile?acompte_id=${acompteId}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const files = await response.json();
+        
+        // Convert file data to Blob and create URLs
+        const fileBlobs = files.map((file) => {
+            const blob = new Blob([new Uint8Array(file.file_data.data)], {
+                type: 'application/pdf'
+            });
+            const url = URL.createObjectURL(blob);
+            return {
+                fileName: file.file_name,
+                url,
+                id: file.id
+            };
+        });
+
+        return fileBlobs;
+
+    } catch (error) {
+        console.error('Error fetching files by acompte_id:', error);
+        throw error;
     }
 }

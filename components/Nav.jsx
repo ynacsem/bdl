@@ -19,6 +19,14 @@ export default function NavigationMenu() {
                                 </div>
                             </Link>
                         </li>
+                        
+                        <li>
+                            <Link href="/facture">
+                                <div className="text-primary hover:text-secondary px-3 py-2 rounded-md text-lg font-semibold transition-colors duration-300">
+                                    Accueil
+                                </div>
+                            </Link>
+                        </li>
                     </ul>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 // fetchFacture.js
 
 export const fetchFacture = async (searchQuery) => {
-    const field = 'intitule,id_fournisseur,date,reference_facture,gest,date_fact,type_facture,type_saisie,structure_ord,structure_dest,mode_reglement,montant,observations,num_cheq,rip';
+    const field = 'intitule,id_fournisseur,date,reference_facture,gest,date_fact,type_facture,type_saisie,structure_ord,structure_dest,mode_reglement,montant,observations,num_cheq,rip,etat';
     const table = 'facture';
     let filters = '';
 
@@ -64,14 +64,19 @@ export const fetchLineFact = async (searchQuery) => {
         const result = await response.json();
 
         // Replace null values with empty strings and add code_op field
-        const sanitizedTableData = result.results.map((item) =>
-            Object.fromEntries(
-                Object.entries(item).map(([key, value]) => [key, value === null ? '' : value])
-            )
-        ).map((item) => ({
-            ...item,
-            codeOperation: '', // Add code_op field with an empty string
-        }));
+        const sanitizedTableData = result.results
+    .map((item) =>
+        Object.fromEntries(
+            Object.entries(item)
+                .map(([key, value]) => [key, value === null ? '' : value])
+                .map(([key, value]) => [key === 'TVA' ? 'codeTVA' : key, value])
+        )
+    )
+    .map((item) => ({
+        ...item,
+        codeOperation: '', // Add code_op field with an empty string
+    }));
+
 
         console.log(sanitizedTableData);
         return sanitizedTableData;
@@ -96,7 +101,7 @@ export const fetchStructure = async () => {
     }
 }
 export const fetchAllFactures = async () => {
-    const field = 'intitule,id_fournisseur,date,reference_facture,gest,date_fact,type_facture,type_saisie,structure_ordonnatrice,structure_destinataire,mode_reglement,montant,observations,num_cheq,rip';
+    const field = 'intitule,id_fournisseur,date,reference_facture,gest,date_fact,type_facture,type_saisie,structure_ordonnatrice,structure_destinataire,mode_reglement,montant,observations,num_cheq,rip,etat';
     const table = 'facture';
     const filters = ''; // Empty filters to fetch all factures
     const query = new URLSearchParams({ field, table, filters }).toString();

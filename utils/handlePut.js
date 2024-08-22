@@ -1,11 +1,20 @@
 
 //used in modify facture    
-export const handleModifier = async (e, formData, searchQuery, tableData, setFormError, router) => {
+import {factureEtat} from "./backend";
+export const handleModifier = async (e, formData, searchQuery, tableData, setFormError, router,validate) => {
     e.preventDefault();
-
+    validate = validate || false
     // Extract the formData including the observation field
     let {intitule, id_fournisseur, reference_facture, date, gest, observations,  type_facture, type_saisie, stru_ord, stru_dest, mod_reg, montant, date_facture,rip,
-        num_cheq } = formData;
+        num_cheq,etat } = formData;
+    if (validate){
+        etat = 2;
+    }
+    const state = factureEtat(formData);
+    const state2 = factureEtat(tableData)
+    if (state === 3 || state2 === 3) {
+        etat = 3
+    }
 
     try {
         montant = montant.toString();
@@ -34,7 +43,8 @@ export const handleModifier = async (e, formData, searchQuery, tableData, setFor
                     montant,
                     date_facture,
                     num_cheq,
-                    rip
+                    rip,
+                    etat
                 },
             }),
         });
@@ -47,14 +57,14 @@ export const handleModifier = async (e, formData, searchQuery, tableData, setFor
 
         // Alert the ID of the facture
         alert(`Facture ID: ${searchQuery}`);
-
+        //upload the files from here
         // Submit line data
         await Promise.all(tableData.map(async (line) => {
             const id_facture = Number(searchQuery); // Convert to a number if necessary
-            let { libelle, montantU, TVA, qte } = line;
+            let { libelle, montantU, codeTVA, qte } = line;
             qte = qte.toString();
             montantU = montantU.toString();
-
+            let TVA = codeTVA
             if (line.id === 0) {
                 try {
                     const resp = await fetch('/api/postdata', {
@@ -97,7 +107,7 @@ export const handleModifier = async (e, formData, searchQuery, tableData, setFor
                                 id_facture,
                                 libelle,
                                 montantU,
-                                TVA,
+                                TVA:codeTVA,
                                 qte,
                             },
                         }),

@@ -57,24 +57,24 @@ export default function AddFournisseurForm() {
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Ajouter Fournisseur</h1>
+      <h1 className="text-2xl font-bold mb-4" style={{ color: '#fdb713' }}>Ajouter Fournisseur</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <div>
-            <label htmlFor="FrsName" className="block font-medium">Nom du Fournisseur</label>
+            <label htmlFor="FrsName" className="block font-medium text-purple-700">Nom du Fournisseur</label>
             <input
               type="text"
               id="FrsName"
               name="FrsName"
               value={formData.FrsName}
               onChange={handleInputChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded focus:border-purple-500"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="NIF" className="block font-medium">NIF (15 caractères)</label>
+            <label htmlFor="NIF" className="block font-medium text-purple-700">NIF (15 caractères)</label>
             <input
               type="text"
               id="NIF"
@@ -82,45 +82,45 @@ export default function AddFournisseurForm() {
               value={formData.NIF}
               onChange={handleInputChange}
               maxLength="15"
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded focus:border-purple-500"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="ADRESS" className="block font-medium">Adresse</label>
+            <label htmlFor="ADRESS" className="block font-medium text-purple-700">Adresse</label>
             <input
               type="text"
               id="ADRESS"
               name="ADRESS"
               value={formData.ADRESS}
               onChange={handleInputChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded focus:border-purple-500"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="CONTACT" className="block font-medium">Numéro de Téléphone</label>
+            <label htmlFor="CONTACT" className="block font-medium text-purple-700">Numéro de Téléphone</label>
             <input
               type="tel"
               id="CONTACT"
               name="CONTACT"
               value={formData.CONTACT}
               onChange={handleInputChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded focus:border-purple-500"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="MODRGL" className="block font-medium">Mode de Règlement</label>
+            <label htmlFor="MODRGL" className="block font-medium text-purple-700">Mode de Règlement</label>
             <select
               id="MODRGL"
               name="MODRGL"
               value={formData.MODRGL}
               onChange={handleInputChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded focus:border-purple-500"
               required
             >
               <option value="" disabled>Sélectionner un mode de règlement</option>
@@ -129,24 +129,9 @@ export default function AddFournisseurForm() {
               <option value="espece">Espèce</option>
             </select>
           </div>
-
-          {/* {formData.MODRGL === 'virement' && (
-            <div>
-              <label htmlFor="rib" className="block font-medium">Numéro RIB</label>
-              <input
-                type="text"
-                id="rib"
-                name="rib"
-                value={formData.rib}
-                onChange={handleInputChange}
-                className="w-full border p-2 rounded"
-                required
-              />
-            </div>
-          )} */}
         </div>
 
-        <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">
+        <button type="submit" className="bg-purple-700 text-white py-2 px-4 rounded hover:bg-purple-800">
           Ajouter Fournisseur
         </button>
       </form>

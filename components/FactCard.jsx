@@ -21,7 +21,11 @@ const FactureCard = ({ facture }) => {
   if (!montant) {
     montant = 0;
   }
-
+  const getClassName = (etat) => {
+    if (etat === 2) return 'text-green-500';
+    if (etat === 3) return 'text-orange-500';
+    return 'text-purple-500';
+};
   // Function to determine the label for type_facture
   const getTypeFactureLabel = (type) => {
     switch(type) {
@@ -61,6 +65,8 @@ const FactureCard = ({ facture }) => {
         return 'Enregistré';
       case 2:
         return 'Validé';
+      case 3:
+        return 'Pre-enregistrer';
       default:
         return 'Non Spécifié';
     }
@@ -78,9 +84,19 @@ const FactureCard = ({ facture }) => {
         <p><strong>Mode de Règlement:</strong> {mod_reg}</p>
         <p><strong>Gestionnaire:</strong> {gest}</p>
         <p><strong>Type de Saisie:</strong> {getTypeSaisieLabel(type_saisie)}</p>
-        <p><strong>Statut:</strong> {getStatusLabel(etat)}</p>
+        <p className={getClassName(etat)}>
+                <strong>Statut:</strong> {getStatusLabel(etat)}
+            </p>
+
       </div>
-      {session.user.previleges.admin && (
+      {etat === 2 && (
+        <Link href={`./facture/${id}`}>
+        <div className="mt-4 inline-block bg-orange-600 text-white px-4 py-2 rounded hover:bg-secondary transition-colors">
+          VIEW
+        </div>
+      </Link>
+      )}
+      {session.user.previleges.admin && (etat == 1 || etat === 3) && (
         <Link href={`./facture/${id}`}>
         <div className="mt-4 inline-block bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition-colors">
           Modify

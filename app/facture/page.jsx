@@ -18,6 +18,7 @@ export default function Home() {
     const [searchId, setSearchId] = useState('');
     const [searchIntitule, setSearchIntitule] = useState('');
     const [selectedTypeFacture, setSelectedTypeFacture] = useState('');
+    const [selectedTypeSaisie, setSelectedTypeSaisie] = useState('');
     const [error, setError] = useState(null);
     const previleges = session?.user?.previleges;
 
@@ -57,25 +58,48 @@ export default function Home() {
     }, [session, status, router]); // Include status in dependencies
 
     useEffect(() => {
-        // Filter factures based on search inputs
         const lowercasedSearchId = searchId.toLowerCase();
         const lowercasedSearchIntitule = searchIntitule.toLowerCase();
+        
+        if (selectedTypeSaisie === '2') {
+            const filtered = [];
+            setFilteredFactures(filtered);
+            const filteredAcc = acomptes.filter(acc => 
+                (searchId === '' || acc.id.toString().includes(lowercasedSearchId)) &&
+                (searchIntitule === '' || acc.libelle_acompte.toLowerCase().includes(lowercasedSearchIntitule)) &&
+                (selectedTypeFacture === '' || acc.type_facture === parseInt(selectedTypeFacture))
+            );
+            filteredAcc.reverse();
+            setFilteredAcomptes(filteredAcc);
+        } else if (selectedTypeSaisie === '1') {
+            const filtered = factures.filter(facture => 
+                (searchId === '' || facture.id.toString().includes(lowercasedSearchId)) &&
+                (searchIntitule === '' || facture.intitule.toLowerCase().includes(lowercasedSearchIntitule)) &&
+                (selectedTypeFacture === '' || facture.type_facture === parseInt(selectedTypeFacture))
+            );
+            filtered.reverse();
+            setFilteredFactures(filtered);
+            setFilteredAcomptes([]); // Clear acomptes if not showing them
+        } else {
+            const filteredFactures = factures.filter(facture => 
+                (searchId === '' || facture.id.toString().includes(lowercasedSearchId)) &&
+                (searchIntitule === '' || facture.intitule.toLowerCase().includes(lowercasedSearchIntitule)) &&
+                (selectedTypeFacture === '' || facture.type_facture === parseInt(selectedTypeFacture))
+            );
+            filteredFactures.reverse();
+            setFilteredFactures(filteredFactures);
+            
+            const filteredAcomptes = acomptes.filter(acc => 
+                (searchId === '' || acc.id.toString().includes(lowercasedSearchId)) &&
+                (searchIntitule === '' || acc.libelle_acompte.toLowerCase().includes(lowercasedSearchIntitule)) &&
+                (selectedTypeFacture === '' || acc.type_facture === parseInt(selectedTypeFacture))
+            );
+            filteredAcomptes.reverse();
+            setFilteredAcomptes(filteredAcomptes);
+        }
 
-        const filtered = factures.filter(facture => 
-            (searchId === '' || facture.id.toString().includes(lowercasedSearchId)) &&
-            (searchIntitule === '' || facture.intitule.toLowerCase().includes(lowercasedSearchIntitule)) &&
-            (selectedTypeFacture === '' || facture.type_facture === parseInt(selectedTypeFacture))
-        );
-        filtered.reverse();
-        setFilteredFactures(filtered);
-        const filteredAcc = acomptes.filter(acc => 
-            (searchId === '' || acc.id.toString().includes(lowercasedSearchId)) &&
-            (searchIntitule === '' || acc.libelle_acompte.toLowerCase().includes(lowercasedSearchIntitule)) &&
-            (selectedTypeFacture === '' || acc.type_facture === parseInt(selectedTypeFacture))
-        );
-        filteredAcc.reverse();
-        setFilteredAcomptes(filteredAcc);
-    }, [searchId, searchIntitule, selectedTypeFacture, factures,acomptes]);
+    }, [searchId, searchIntitule, selectedTypeFacture, factures, acomptes, selectedTypeSaisie]);
+    
 
     const handleIdChange = (event) => {
         setSearchId(event.target.value);
@@ -88,14 +112,16 @@ export default function Home() {
     const handleTypeFactureChange = (event) => {
         setSelectedTypeFacture(event.target.value);
     };
-
+    const handleTypeSaisieChange = (event) => {
+        setSelectedTypeSaisie(event.target.value);
+    };
     if (loading) {
         return <p>Loading...</p>; // Display loading indicator while waiting for session status
     }
 
     return (
         <>
-            <Nav />
+            {/* <Nav /> */}
             
             
             <div className="p-4">
@@ -124,6 +150,15 @@ export default function Home() {
                         <option value="1">Facture Fournisseur</option>
                         <option value="2">Facute Clients</option>
                         <option value="3">Facture Salariés</option>
+                    </select>
+                    <select 
+                        value={selectedTypeSaisie}
+                        onChange={handleTypeSaisieChange}
+                        className="p-2 border border-gray-300 rounded">
+                        <option value="">All Types</option>
+                        <option value="1">Facture</option>
+                        <option value="2">Acompte</option>
+
                     </select>
                 </div>
                 

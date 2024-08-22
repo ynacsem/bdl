@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation'
 import { handleSubmit } from '@/utils/handleSubmit';
 import { uploadFile } from '@/utils/fileupload';
 import { fetchLign } from '@/utils/fetch';
+import {uploadFiles} from '@/utils/fileupload';
+import { useSession } from 'next-auth/react';
 export default function SaisieFacture(props) {
+  const { data: session, status } = useSession();
   const [files, setFiles] = useState([]); 
   const router = useRouter()
   const [suppliers, setSuppliers] = useState([]);
@@ -16,7 +19,7 @@ export default function SaisieFacture(props) {
     id_fournisseur: '',
     reference_facture: '',
     date: new Date().toISOString().split('T')[0],
-    gest: '',
+    gest: session.user.username,
     observations: '',
     type_facture: props.type, // New field
     type_saisie:'', // New field
@@ -25,8 +28,8 @@ export default function SaisieFacture(props) {
     mod_reg: '', // New field
     montant: '', // New field
     date_facture: '',
-    rip:'',
-    num_cheq:'',
+    rip:'0',
+    num_cheq:'0',
     etat:1
   });
 
@@ -35,7 +38,7 @@ export default function SaisieFacture(props) {
       codeOperation: '',
       libelle: '',
       compte: '',
-      codeTVA: '',
+      TVA: '',
       nature: '',
       montantUnitaireHT: 0,
       quantite: 0,
@@ -87,7 +90,7 @@ export default function SaisieFacture(props) {
         codeOperation: '',
         libelle: '',
         compte: '',
-        TVA: '',
+        codeTVA: '',
         nature: '',
         amputationComplementaire1: '',
         amputationComplementaire2: '',
@@ -108,30 +111,9 @@ export default function SaisieFacture(props) {
 
   
   
-  const uploadFiles = async (apiUrl, factureId, files) => {
-    try {
-        const formData = new FormData();
-        formData.append('facture_id', factureId);
-        files.forEach((file) => {
-            formData.append('file_data', file);
-        });
+  
 
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            body: formData,
-        });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Error uploading files:', error);
-        throw error;
-    }
-};
   
 
   const calculateTotal = (data) => {
@@ -192,10 +174,10 @@ export default function SaisieFacture(props) {
       if (result.results && result.results.length > 0) {
         setStruct(result.results);
       } else {
-        console.warn('No gestionaires found.');
+        console.warn('No structure found.');
       }
     } catch (error) {
-      console.error('Error fetching gestionaires:', error);
+      console.error('Error fetching structures:', error);
     }
   };
 
@@ -208,16 +190,20 @@ export default function SaisieFacture(props) {
 
     
         // If no file is being uploaded, just submit the form
-    let id_fact = await handleSubmit(e, formData, tableData, router, setFormError);
-    
-    const apiUrl = 'http://localhost:3000/api/uploadfile'; // Replace with your API endpoint
+    let factureId = await handleSubmit(e, formData, tableData, router, setFormError);
+    if (files.length > 0) {
+      const apiUrl = 'http://localhost:3000/api/uploadfile'; // Replace with your API endpoint
 
         try {
-            const result = await uploadFiles(apiUrl, id_fact, files);
+            const result = await uploadFiles(apiUrl, factureId,null, files);
             console.log('Upload successful:', result);
         } catch (error) {
             console.error('Upload failed:', error);
         }
+    }
+    
+      
+    
 };
 
 
@@ -258,228 +244,199 @@ const handleFileDownload = (file) => {
   
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
+    <div className="p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg">
       
       
       
-      <h1 className="text-2xl font-bold mb-4">Saisie Facture</h1>
+      <h1 className="text-2xl font-bold mb-4 text-purple-800">Saisie Facture</h1>
       <form onSubmit={onSubmit} className="space-y-4">
         {formError && <p className="text-red-500">{formError}</p>}
         {tableError && <p className="text-red-500">{tableError}</p>}
 
         <div className="space-y-2">
-          <div>
-            <label htmlFor="intitule" className="block">Intitulé</label>
-            <input
-              type="text"
-              id="intitule"
-              name="intitule"
-              required
-              value={formData.intitule}
-              onChange={handleChange}
-              className="w-full border p-2 rounded"
-            />
-          </div>
-          <div>
-            <label htmlFor="id_fournisseur">Fournisseur</label>
-            <div className="flex items-center space-x-2">
-              <select
-                id="id_fournisseur"
-                name="id_fournisseur"
-                value={formData.id_fournisseur}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              >
-                <option value="" disabled>Sélectionner un fournisseur</option>
-                {suppliers.map((supplier, index) => (
-                  <option key={index} value={supplier.IDfrs}>
-                    {supplier.FrsName}
-                  </option>
-                ))}
-              </select>
-              <Link
-                href="/facture/ajouterFrs"
-                className="bg-blue-500 text-white text-center rounded"
-              >
-                Ajouter un fournisseur
-              </Link>
-            </div>
-          </div>
-          <div>
-            <label htmlFor="reference_facture" className="block">Référence</label>
-            <input
-              type="text"
-              id="reference_facture"
-              name="reference_facture"
-              value={formData.reference_facture}
-              onChange={handleChange}
-              className="w-full border p-2 rounded"
-            />
-          </div>
-          <div>
-    <label htmlFor="date_auto" className="block">Date</label>
+  <div>
+    <label htmlFor="intitule" className="block text-gray-800 font-semibold mb-1">Intitulé</label>
+    <input
+      type="text"
+      id="intitule"
+      name="intitule"
+      required
+      value={formData.intitule}
+      onChange={handleChange}
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+    />
+  </div>
+  <div>
+    <label htmlFor="id_fournisseur" className="block text-gray-800 font-semibold mb-1">Fournisseur</label>
+    <div className="flex items-center space-x-2">
+      <select
+        id="id_fournisseur"
+        name="id_fournisseur"
+        value={formData.id_fournisseur}
+        onChange={handleChange}
+        className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+      >
+        <option value="" disabled>Sélectionner un fournisseur</option>
+        {suppliers.map((supplier, index) => (
+          <option key={index} value={supplier.IDfrs}>
+            {supplier.FrsName}
+          </option>
+        ))}
+      </select>
+      <Link
+        href="/facture/ajouterFrs"
+        className="bg-purple-800 text-white rounded-md px-3 py-1 text-center hover:bg-purple-700"
+      >
+        Ajouter un fournisseur
+      </Link>
+    </div>
+  </div>
+  <div>
+    <label htmlFor="reference_facture" className="block text-gray-800 font-semibold mb-1">Référence</label>
+    <input
+      type="text"
+      id="reference_facture"
+      name="reference_facture"
+      value={formData.reference_facture}
+      onChange={handleChange}
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+    />
+  </div>
+  <div>
+    <label htmlFor="date_auto" className="block text-gray-800 font-semibold mb-1">Date</label>
     <input
       type="date"
       id="date"
       name="date"
       value={formData.date}
       readOnly
-      className="w-full border p-2 rounded"
+      className="w-full border border-purple-800 p-2 rounded-md bg-gray-200 text-gray-600 cursor-not-allowed"
     />
   </div>
-          <div>
-            <label htmlFor="gest">gestionnaire</label>
-            <select
-              id="gest"
-              name="gest"
-              value={formData.gest}
-              onChange={handleChange}
-              className="w-full border p-2 rounded"
+  <div>
+    <label htmlFor="observations" className="block text-gray-800 font-semibold mb-1">Pièces justificatives</label>
+    <textarea
+      id="observations"
+      name="observations"
+      value={formData.observations}
+      onChange={handleChange}
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+    />
+  </div>
+  <div>
+    <h3 className="text-xl font-semibold mb-2 text-purple-800">Selected Files:</h3>
+    <table className="min-w-full bg-white border border-gray-300 rounded-lg">
+      <thead>
+        <tr className="bg-gray-100 text-sm">
+          <th className="border-b text-left px-2 py-1">
+            <button
+              type="button"
+              onClick={() => document.getElementById('fileInput').click()}
+              className="bg-purple-800 text-white hover:bg-purple-700 py-1 px-2 rounded-md"
             >
-              <option value="" disabled>Sélectionner un gestionnaire</option>
-              {/* {gest
-                .map((g, index) => (
-                  <option key={index} value={g.nom}>
-                    {g.nom}
-                  </option>
-                ))} */}
-            </select>
-          </div>
-          
-          <div>
-            <label htmlFor="observations" className="block">Pièces justificatives</label>
-            <textarea
-              id="observations"
-              name="observations"
-              value={formData.observations}
-              onChange={handleChange}
-              className="w-full border p-2 rounded"
+              Add Files
+            </button>
+            <input
+              type="file"
+              id="fileInput"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
             />
-          </div>
-          
-          <div>
-        <h3 className="text-xl font-semibold mb-2">
-            Selected Files:
-        </h3>
-        <table className="min-w-full bg-white border border-gray-300 rounded">
-            <thead>
-                <tr className="bg-gray-100 text-sm">
-                    <th className="border-b text-left px-2">
-                        <button
-                            type="button"
-                            onClick={() => document.getElementById('fileInput').click()}
-                            className="bg-blue-500 text-white hover:bg-blue-700 py-1 px-2 rounded"
-                        >
-                            Add Files
-                        </button>
-                        <input
-                            type="file"
-                            id="fileInput"
-                            multiple
-                            onChange={handleFileSelect}
-                            className="hidden"
-                        />
-                    </th>
-                    <th className="py-1 px-2 border-b text-left">File Name</th>
-                    <th className="py-1 px-2 border-b text-left">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {files.length > 0 ? (
-                    files.map((file) => (
-                        <tr key={file.name}>
-                            <td className="py-1 px-2 border-b text-gray-700">{file.name}</td>
-                            <td className="py-1 px-2 border-b">
-                                <button
-                                    onClick={() => handleFileDownload(file)}
-                                    className="bg-blue-500 text-white hover:bg-blue-700 py-1 px-3 rounded mr-2"
-                                >
-                                    View
-                                </button>
-                                <button
-                                    onClick={() => handleFileRemove(file.name)}
-                                    className="bg-red-500 text-white hover:bg-red-700 py-1 px-3 rounded"
-                                >
-                                    Delete
-                                </button>
-                            </td>
-                        </tr>
-                    ))
-                ) : (
-                    <tr>
-                        <td colSpan="3" className="py-2 px-4 text-gray-500 text-center">
-                            No files selected
-                        </td>
-                    </tr>
-                )}
-            </tbody>
-        </table>
+          </th>
+          <th className="py-1 px-2 border-b text-left">File Name</th>
+          <th className="py-1 px-2 border-b text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {files.length > 0 ? (
+          files.map((file) => (
+            <tr key={file.name}>
+              <td className="py-1 px-2 border-b text-gray-700">{file.name}</td>
+              <td className="py-1 px-2 border-b">
+                <button
+                type='button'
+                  onClick={() => handleFileDownload(file)}
+                  className="bg-purple-800 text-white hover:bg-purple-700 py-1 px-3 rounded-md mr-2"
+                >
+                  View
+                </button>
+                <button
+                  onClick={() => handleFileRemove(file.name)}
+                  className="bg-red-500 text-white hover:bg-red-600 py-1 px-3 rounded-md"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="3" className="py-2 px-4 text-gray-500 text-center">
+              No files selected
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+  <div>
+      <label htmlFor="type_facture" className="block text-gray-800 font-semibold mb-1">Type de Facture</label>
+      <select
+        id="type_facture"
+        name="type_facture"
+        value={formData.type_facture}
+        onChange={handleChange}
+        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 `}
+        
+      >
+        <option value={0} disabled>Sélectionner un type</option>
+        <option value={1}>Facture Fournisseur</option>
+        <option value={2}>Facture Salarié</option>
+        <option value={3}>Facture Client</option>
+      </select>
     </div>
 
-
-        </div>
-        
-
   <div>
-    <label htmlFor="type_saisie" className="block">Type de Saisie</label>
-    <select
-      id="type_saisie"
-      name="type_saisie"
-      value={formData.type_saisie}
-      onChange={handleChange}
-      className="w-full border p-2 rounded"
-    >
-      <option value="" disabled>Sélectionner un type</option>
-      <option value={1}>Facture</option>
-      <option value={2}>Facture Non Comptable</option>
-      <option value={3}>Acompte</option>
-      <option value={4}>Avoir</option>
-      <option value={4}>Avoir Non Comptable</option>
-    </select>
-  </div>
-
-  <div>
-    <label htmlFor="structure_ord" className="block">Structure Ordonnatrice</label>
+    <label htmlFor="structure_ord" className="block text-gray-800 font-semibold mb-1">Structure Ordonnatrice</label>
     <select
       id="structure_ordonnatrice"
       name="stru_ord"
       value={formData.stru_ord}
       onChange={handleChange}
-      className="w-full border p-2 rounded"
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     >
       <option value="" disabled>Sélectionner une structure</option>
       {struct.map((s, index) => (
-        <option key={index} value={s.libelle}>{s.libelle}
-        </option>
+        <option key={index} value={s.libelle}>{s.libelle}</option>
       ))}
     </select>
   </div>
 
   <div>
-    <label htmlFor="stru_dest" className="block">Structure Destinataire</label>
+    <label htmlFor="stru_dest" className="block text-gray-800 font-semibold mb-1">Structure Destinataire</label>
     <select
       id="stru_dest"
       name="stru_dest"
       value={formData.stru_dest}
       onChange={handleChange}
-      className="w-full border p-2 rounded"
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     >
       <option value="" disabled>Sélectionner une structure</option>
       {struct.map((s, index) => (
-        <option key={index} value={s.libelle}>{s.libelle}
-        </option>
+        <option key={index} value={s.libelle}>{s.libelle}</option>
       ))}
     </select>
   </div>
 
   <div>
-    <label htmlFor="mod_reg" className="block">Mode de Règlement</label>
+    <label htmlFor="mod_reg" className="block text-gray-800 font-semibold mb-1">Mode de Règlement</label>
     <select
       id="mod_reg"
       name="mod_reg"
       value={formData.mod_reg}
       onChange={handleChange}
-      className="w-full border p-2 rounded"
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     >
       <option value="" disabled>Sélectionner un mode</option>
       <option value="cheque">Chèque</option>
@@ -488,57 +445,58 @@ const handleFileDownload = (file) => {
     </select>
   </div>
   {formData.mod_reg === 'cheque' && (
-            <div>
-              <label htmlFor="num_cheq" className="block">Numéro de Chèque</label>
-              <input
-                type="text"
-                id="num_cheq"
-                name="num_cheq"
-                value={formData.num_cheq}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-            </div>
-          )}
+    <div>
+      <label htmlFor="num_cheq" className="block text-gray-800 font-semibold mb-1">Numéro de Chèque</label>
+      <input
+        type="text"
+        id="num_cheq"
+        name="num_cheq"
+        value={formData.num_cheq}
+        onChange={handleChange}
+        className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+      />
+    </div>
+  )}
   {formData.mod_reg === 'virement' && (
-            <div>
-              <label htmlFor="rip" className="block">RIP</label>
-              <input
-                type="text"
-                id="rip"
-                name="rip"
-                value={formData.rip}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-            </div>
-          )}
+    <div>
+      <label htmlFor="num_virement" className="block text-gray-800 font-semibold mb-1">Numéro de Virement</label>
+      <input
+        type="text"
+        id="num_virement"
+        name="num_virement"
+        value={formData.num_virement}
+        onChange={handleChange}
+        className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+      />
+    </div>
+  )}
 
   <div>
-  <label htmlFor="montant" className="block">Montant</label>
-  <input
-  type="number"
-  id="montant"
-  name="montant"
-  value={formData.montant}
-  onChange={handleChange} // Call the function to get the total amount
-  readOnly // Make the input view-only
-  className="w-full border p-2 rounded"
-/>
-
+    <label htmlFor="montant" className="block text-gray-800 font-semibold mb-1">Montant</label>
+    <input
+      type="number"
+      id="montant"
+      name="montant"
+      value={formData.montant}
+      onChange={handleChange} // Call the function to get the total amount
+      readOnly // Make the input view-only
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+    />
   </div>
 
   <div>
-    <label htmlFor="date_fact" className="block">Date Facture</label>
+    <label htmlFor="date_fact" className="block text-gray-800 font-semibold mb-1">Date Facture</label>
     <input
       type="date"
       id="date_facture"
       name="date_facture"
       value={formData.date_facture}
       onChange={handleChange}
-      className="w-full border p-2 rounded"
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     />
   </div>
+</div>
+
 
   
 
@@ -598,8 +556,8 @@ const handleFileDownload = (file) => {
                 <td className="border  py-2">
                   <input
                     type="text"
-                    name="TVA"
-                    value={row.TVA||''}
+                    name="codeTVA"
+                    value={row.codeTVA||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -660,7 +618,7 @@ const handleFileDownload = (file) => {
         <button
           type="button"
           onClick={handleAddRow}
-          className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 mt-4"
+          className="bg-purple-500 text-white py-2 px-4 rounded hover:bg-green-600 mt-4"
         >
           Ajouter une ligne
         </button>

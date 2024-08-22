@@ -1,9 +1,9 @@
-import { fetchAcompte, fetchAcompteDetails } from './fetch';
+import { fetchAcompte, fetchAcompteDetails,fetchFilesByAcompteId } from './fetch';
 
 // Function to calculate montantTotal for each line item (if needed)
 
 
-export const handleSearch = async (idAcompte, setFormData, setTableData) => {
+export const handleSearch = async (idAcompte, setFormData, setTableData,setFiles) => {
   try {
     // Fetch and sanitize data for acompte
     let sanitizedFormData = await fetchAcompte(idAcompte);
@@ -16,7 +16,12 @@ export const handleSearch = async (idAcompte, setFormData, setTableData) => {
     }));
 
     console.log('Form Data:', sanitizedFormData);
-
+    try {
+      const sanitizedFiles = await fetchFilesByAcompteId(idAcompte);
+      setFiles(sanitizedFiles);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+    }
     try {
       // Fetch and sanitize details for acompte
       const sanitizedTableData = await fetchAcompteDetails(idAcompte);

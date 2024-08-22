@@ -1,10 +1,15 @@
+import { factureEtat } from "./backend";
 export const handleSubmit = async (e, formData, tableData, router, setFormError) => {
     e.preventDefault();
 
     let { intitule, id_fournisseur, reference_facture, date, gest, observations, type_facture, type_saisie, stru_ord, stru_dest, mod_reg, montant, date_facture,rip,
         num_cheq, etat } = formData;
     let id_facture
-
+    const state = factureEtat(formData);
+    const state2 = factureEtat(tableData)
+    if (state === 3 || state2 === 3) {
+        etat = 3
+    }
     try {
         // Check if montant is defined and convert to string
         montant = montant ? montant.toString() : '';
@@ -49,7 +54,7 @@ export const handleSubmit = async (e, formData, tableData, router, setFormError)
              id_facture = Number(result.id);
             
             // Ensure line properties are defined
-            let { libelle = '', montantU = '', TVA = '', qte = '' } = line;
+            let { libelle = '', montantU = '', codeTVA = '', qte = '' } = line;
 
             qte = qte ? qte.toString() : '';
             montantU = montantU ? montantU.toString() : '';
@@ -66,7 +71,7 @@ export const handleSubmit = async (e, formData, tableData, router, setFormError)
                             id_facture,
                             libelle,
                             montantU,
-                            TVA,
+                            TVA : codeTVA,
                             qte
                         }
                     }),

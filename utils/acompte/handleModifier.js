@@ -5,8 +5,7 @@ export const handleModifier = async (e, formDataAcompte, formDataRemboursement, 
       // Convert formDataAcompte according to table schema
       let {
         type_facture, 
-        id_fournisseur, 
-        id_fact, 
+        id_fournisseur,  
         stru_ord, 
         stru_dest, 
         libelle_acompte, 
@@ -14,8 +13,7 @@ export const handleModifier = async (e, formDataAcompte, formDataRemboursement, 
         numacmpt, 
         montant, 
         observations, 
-        dateacmpt, 
-        gest
+        dateacmpt
       } = formDataAcompte;
   
       montant = montant.toString();
@@ -31,8 +29,7 @@ export const handleModifier = async (e, formDataAcompte, formDataRemboursement, 
           id: formDataAcompte.id,  // Assuming you have `id_acompte` in formDataAcompte
           data: {
             type_facture,
-            id_fournisseur: parseInt(id_fournisseur, 10), // Convert to integer
-            id_fact: parseInt(id_fact, 10), // Convert to integer
+            id_fournisseur: parseInt(id_fournisseur, 10)||'', // Convert to integer
             stru_ord,
             stru_dest,
             libelle_acompte,
@@ -40,14 +37,13 @@ export const handleModifier = async (e, formDataAcompte, formDataRemboursement, 
             numacmpt,
             montant: parseFloat(montant).toFixed(2), // Convert to decimal
             observations,
-            dateacmpt, // Ensure date is in YYYY-MM-DD format
-            gest,
+            dateacmpt,
           },
         }),
       });
   
       const acompteResult = await acompteResponse.json();
-  
+      console.log(acompteResult);
       if (!acompteResponse.ok) {
         throw new Error(acompteResult.error || 'Something went wrong');
       }
