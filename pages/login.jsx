@@ -6,7 +6,7 @@ import { useState } from 'react';
 export default function LoginPage() {
     const { data: session } = useSession();
     const router = useRouter();
-    const [email, setEmail] = useState('');
+    const [code_user, setCodeUser] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
@@ -14,7 +14,7 @@ export default function LoginPage() {
         e.preventDefault();
         const result = await signIn('credentials', {
             redirect: false,
-            email,
+            code_user,
             password
         });
 
@@ -42,12 +42,13 @@ export default function LoginPage() {
                         )}
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-900">Email</label>
+                                <label htmlFor="code_user" className="block text-sm font-medium text-gray-900">Code User</label>
                                 <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
+                                    type="text"
+                                    id="code_user"
+                                    value={code_user}
+                                    onChange={(e) => setCodeUser(e.target.value)}
+                                    placeholder="Code User"
                                     required
                                     className="block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-indigo-600"
                                 />
@@ -56,6 +57,7 @@ export default function LoginPage() {
                                 <label htmlFor="password" className="block text-sm font-medium text-gray-900">Password</label>
                                 <input
                                     type="password"
+                                    id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Password"
@@ -65,7 +67,7 @@ export default function LoginPage() {
                             </div>
                             <button
                                 type="submit"
-                                className="w-full py-2 px-4 bg-purple-700 text-white rounded-md shadow-sm hover:bg-purple-600 focus:ring-2 focus:ring-indigo-600"
+                                className="min-w-64 py-2 px-2 bg-purple-700 text-white rounded-md shadow-sm hover:bg-purple-600 focus:ring-2 focus:ring-indigo-600"
                             >
                                 Login
                             </button>
@@ -76,7 +78,7 @@ export default function LoginPage() {
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome, {session.user.username}</h2>
                         <button
                             onClick={() => signOut()}
-                            className="w-full py-2 px-4 bg-purple-700 text-white rounded-md shadow-sm hover:bg-purple-600 focus:ring-2 focus:ring-indigo-600"
+                            className="min-w-64 py-2 px-4 bg-purple-700 text-white rounded-md shadow-sm hover:bg-purple-600 focus:ring-2 focus:ring-indigo-600"
                         >
                             Logout
                         </button>

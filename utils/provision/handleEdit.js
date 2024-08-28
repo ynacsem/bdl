@@ -1,4 +1,4 @@
-import { fetchFacture, fetchLineFact,fetchLign } from './fetch';
+import { fetchProvision, fetchLineProvision,fetchLign } from './fetch';
 
 // Function to calculate montantTotal for each line item
 const calculateMontantTotal = (line) => {
@@ -9,21 +9,22 @@ const calculateMontantTotal = (line) => {
 export const handleEdit = async (searchQuery, setFormData, setTableData) => {
   try {
     // Fetch and sanitize facture data
-    const sanitizedData = await fetchFacture(searchQuery);
+    const sanitizedData = await fetchProvision(searchQuery);
 
     // Update form data with sanitized data
     setFormData(sanitizedData);
     setFormData((prevData) => ({
       ...prevData,
       date: prevData.date.split('T')[0],
-      date_facture: prevData.date_facture.split('T')[0], // Format date to 'yyyy-MM-dd'
+      date_pro: prevData.date_pro.split('T')[0], 
+      date_extourne: prevData.date_extourne.split('T')[0], // Format date to 'yyyy-MM-dd'
     }));
 
     console.log(sanitizedData);
 
     try {
       // Fetch and sanitize table data
-      const sanitizedTableData = await fetchLineFact(searchQuery);
+      const sanitizedTableData = await fetchLineProvision(searchQuery);
       console.log('sanitizedTableData',sanitizedTableData);
     
       // Map over the sanitizedTableData and fetch additional data for each line
@@ -40,7 +41,8 @@ export const handleEdit = async (searchQuery, setFormData, setTableData) => {
             codeOperation: newData?.cod_op,
             nature: newData?.type,
             compte: newData?.compte,
-            montantTotal: calculateMontantTotal(line) // Add calculated montantTotal
+            montantTotal: calculateMontantTotal(line),
+             // Add calculated montantTotal
           };
           console.log('updated lines',updatedLine);
           return updatedLine;

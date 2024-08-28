@@ -7,9 +7,11 @@ import {useRouter} from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {fetchFrsAcompte} from '@/utils/backend';
 import {uploadFiles} from '@/utils/fileupload';
+import {factureEtat} from "@/utils/backend";
+import {useEffect} from 'react';
 
 export default function Acompte() {
-  const { data: session } = useSession();
+  const { data: session,status } = useSession();
   const router = useRouter();
   let [formDataAcompte, setFormDataAcompte] = useState({
     //date: new Date().toISOString().split('T')[0],
@@ -19,7 +21,6 @@ export default function Acompte() {
   let [formDataRemboursement, setFormDataRemboursement] = useState({
     gestionnaire_bap: '',
     solde_a_encaisser: '',
-    date_echeance: '',
     date_valuer: '',
     date_forcage_remboursement: '',
     date_encaissement: '',
@@ -100,8 +101,9 @@ export default function Acompte() {
 
   
     try {
+      
       // Convert formDataAcompte according to table schema
-      const convertedFormDataAcompte = {
+      let convertedFormDataAcompte = {
         type_facture: parseInt(formDataAcompte.type_facture,10), // Convert to integer
         id_fournisseur: parseInt(formDataAcompte.id_fournisseur, 10)||1, // Convert to integer
         id_fact: parseInt(formDataAcompte.id_fact, 10), // Convert to integer
@@ -111,15 +113,36 @@ export default function Acompte() {
         date: new Date().toISOString().split('T')[0], // Ensure date is in YYYY-MM-DD format
         numacmpt: formDataAcompte.numacmpt||0,
         montant: montant1, // Convert to decimal
-        observations: formDataAcompte.observations||'',
         dateacmpt: formDataAcompte.dateacmpt, // Ensure date is in YYYY-MM-DD format
         gest: session?.user.username,
         date_echeance: formDataAcompte.date_echeance, 
          // Ensure date is in YYYY-MM-DD format
-         date_encaissement: formDataAcompte.date_encaissement// Ensure date is in YYYY-MM-DD format
+         date_encaissement: formDataAcompte.date_encaissement,
+         etat:1// Ensure date is in YYYY-MM-DD format
       };
+      let convertedFormDataRemboursement = { // Use the ID from the acompte submission
+        gestionnaire_bap: formDataRemboursement.gestionnaire_bap,
+        solde_a_encaisser: formDataRemboursement.solde_a_encaisser,
+         // Ensure date is in YYYY-MM-DD format
+        date_valuer: formDataRemboursement.date_valuer, // Ensure date is in YYYY-MM-DD format
+        date_forcage_remboursement: formDataRemboursement.date_forcage_remboursement, // Ensure date is in YYYY-MM-DD format
+        num_cheque: formDataRemboursement.num_cheque||'0',
+        ref_pointage: formDataRemboursement.ref_pointage,
+        ref_a_rappeler: formDataRemboursement.ref_a_rappeler,
+        mode_encaisement: formDataRemboursement.mode_encaisement,
+        date_encaissement: formDataRemboursement.date_encaissement,
+        numero: formDataRemboursement.numero||'0',
+        compte: formDataRemboursement.compte||'0',
+      };
+      let etat1 = 1
+      const state = factureEtat(convertedFormDataAcompte);
+    const state2 = factureEtat(convertedFormDataRemboursement)
+    if (state === 3 || state2 === 3) {
+        etat1 = 3
+    } 
+    convertedFormDataAcompte.etat = etat1;
       console.log(convertedFormDataAcompte)
-  
+      
       // Submit SaisieAcompte form
       let acompteId = await handleAcompteSubmit(convertedFormDataAcompte);
       alert(`Acompte ${acompteId} created successfully!`);
@@ -130,7 +153,7 @@ export default function Acompte() {
       const apiUrl = 'http://localhost:3000/api/uploadfile'; // Replace with your API endpoint
 
         try {
-            const result = await uploadFiles(apiUrl, null,acompteId, files);
+            const result = await uploadFiles(apiUrl, null,acompteId,null, files);
             console.log('Upload successful:', result);
         } catch (error) {
             console.error('Upload failed:', error);
@@ -140,23 +163,24 @@ export default function Acompte() {
       console.log(formDataRemboursement)
   
       // Convert formDataRemboursement according to its schema (similar to `formDataAcompte`)
-      const convertedFormDataRemboursement = {
+      let convertedFormDataRemboursement1 = {
         id_acompte: acompteId, // Use the ID from the acompte submission
         gestionnaire_bap: formDataRemboursement.gestionnaire_bap,
         solde_a_encaisser: formDataRemboursement.solde_a_encaisser,
          // Ensure date is in YYYY-MM-DD format
         date_valuer: formDataRemboursement.date_valuer, // Ensure date is in YYYY-MM-DD format
         date_forcage_remboursement: formDataRemboursement.date_forcage_remboursement, // Ensure date is in YYYY-MM-DD format
-        num_cheque: formDataRemboursement.num_cheque,
+        num_cheque: formDataRemboursement.num_cheque||'0',
         ref_pointage: formDataRemboursement.ref_pointage,
         ref_a_rappeler: formDataRemboursement.ref_a_rappeler,
         mode_encaisement: formDataRemboursement.mode_encaisement,
-        numero: formDataRemboursement.numero,
-        compte: formDataRemboursement.compte,
+        date_encaissement: formDataRemboursement.date_encaissement,
+        numero: formDataRemboursement.numero||'0',
+        compte: formDataRemboursement.compte||'0',
       };
-      console.log(convertedFormDataRemboursement)
+      console.log('rem',convertedFormDataRemboursement1)
       // Submit SaisieRemboursement form
-      await handleRemboursementSubmit(convertedFormDataRemboursement);
+      await handleRemboursementSubmit(convertedFormDataRemboursement1);
   
       console.log('Both forms submitted successfully');
 
@@ -165,10 +189,22 @@ export default function Acompte() {
       console.error('Error submitting forms:', error);
     }
   };
+  useEffect(()=>{
+    if (status === 'loading') {
+      // Wait for the session status to resolve
+      return;
+  }
+
+  if (!session) {
+      // Redirect to login if not authenticated
+      router.push('/login');
+      return;
+  }
+  },[])
   
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
+    <div className="overlay p-4 max-w-6xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-4">
         <SaisieAcompte
           formData={formDataAcompte}

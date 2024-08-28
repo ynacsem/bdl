@@ -73,7 +73,7 @@ const FactureCard = ({ facture }) => {
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow mb-6">
+    <div className="bg-white shadow-lg rounded-lg p-6 border border-primary hover:border-secondary hover:shadow-xl transition-shadow mb-6 hover:bg-gray-100 ">
       <h1 className="text-2xl font-bold text-primary mb-3">{intitule}</h1>
       <h2 className="text-xl font-semibold text-secondary mb-4">Facture ID: {id}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -85,7 +85,7 @@ const FactureCard = ({ facture }) => {
         <p><strong>Gestionnaire:</strong> {gest}</p>
         <p><strong>Type de Saisie:</strong> {getTypeSaisieLabel(type_saisie)}</p>
         <p className={getClassName(etat)}>
-                <strong>Statut:</strong> {getStatusLabel(etat)}
+                <strong>Etat:</strong> {getStatusLabel(etat)}
             </p>
 
       </div>
@@ -96,7 +96,7 @@ const FactureCard = ({ facture }) => {
         </div>
       </Link>
       )}
-      {session.user.previleges.admin && (etat == 1 || etat === 3) && (
+      {(session?.user?.previleges?.MODIFICATION_FACTURE||session?.user?.previleges?.admin) && (etat == 1 || etat === 3) && (
         <Link href={`./facture/${id}`}>
         <div className="mt-4 inline-block bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition-colors">
           Modify

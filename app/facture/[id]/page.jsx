@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'
-import { handleEdit, handleedit } from '@/utils/handleEdit';
+import { handleEdit } from '@/utils/handleEdit';
 import { handleModifier } from '@/utils/handlePut';
 import { fetchLign } from '@/utils/fetch';
 import { handleDownloadFiles } from '@/utils/handleDownloadFiles';
@@ -37,7 +37,7 @@ export default function ModifierFacture({params}) {
     montant: '', // New field
     date_facture: '',
     rip:'',
-    num_cheq:'' // New field
+    num_cheq:'' 
      // New field for current date
   });
 
@@ -72,21 +72,24 @@ export default function ModifierFacture({params}) {
   
   useEffect(() => {
     // Select all input elements and set their className to 'bg-gray-400'
-    if (formData.etat === 2) {
+    if (isReadOnly) {
       document.querySelectorAll('input').forEach(input => {
-        input.classList.add('bg-gray-300');
+        input.classList.add('bg-gray-400');
+        input.classList.remove('bg-white');
     });
     document.querySelectorAll('select').forEach(input => {
-      input.classList.add('bg-gray-300');
+      input.classList.add('bg-gray-400');
+      input.classList.remove('bg-white');
   })
-
+  
    document.querySelectorAll('textarea').forEach(input => {
-    input.classList.add('bg-gray-300');
+    input.classList.add('bg-gray-400');
+    input.classList.remove('bg-white');
    })
-
+  
     }
     
-}, [formData]);
+  }, [isReadOnly,formData]);
 
 
   const handleTableChange = async (index, e) => {
@@ -119,7 +122,6 @@ export default function ModifierFacture({params}) {
       const newTableData = [
         ...prevTableData,
         {
-          id: 0,
           codeOperation: '',
           libelle: '',
           compte: '',
@@ -234,11 +236,13 @@ export default function ModifierFacture({params}) {
     }
   
   const filesWithoutId = files.filter(file => !file.id); // Filter out files that do have an id
+  if (filesWithoutId.length > 0) {
+    console.log(filesWithoutId);
+    const apiUrl = 'http://localhost:3000/api/uploadfile';
+      console.log(filesWithoutId)
+      await uploadFiles(apiUrl, params.id, null,null, filesWithoutId);
+  }
   
-  console.log(filesWithoutId);
-  const apiUrl = 'http://localhost:3000/api/uploadfile';
-    console.log(filesWithoutId)
-    await uploadFiles(apiUrl, params.id, null, filesWithoutId);
   }
       
   
@@ -399,7 +403,7 @@ if (status === 'loading') {
   
 
   return (
-    <div className="p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg">
+    <div className=" overlay p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg">
       <>
   <h1 className="text-2xl font-bold mb-4 text-purple-800">Modifier une facture</h1>
   <form onSubmit={handleSubmit} className="space-y-4">
@@ -415,7 +419,7 @@ if (status === 'loading') {
           name="intitule"
           value={formData.intitule}
           onChange={handleChange}
-          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
           readOnly={isReadOnly}
         />
       </div>
@@ -427,7 +431,7 @@ if (status === 'loading') {
             name="id_fournisseur"
             value={formData.id_fournisseur}
             onChange={handleChange}
-            className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+            className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
             disabled={isReadOnly}
           >
             <option value="" disabled>Sélectionner un fournisseur</option>
@@ -453,7 +457,7 @@ if (status === 'loading') {
           name="reference_facture"
           value={formData.reference_facture}
           onChange={handleChange}
-          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
           readOnly={isReadOnly}
         />
       </div>
@@ -465,7 +469,7 @@ if (status === 'loading') {
           name="date"
           value={formData.date}
           onChange={handleChange}
-          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
           readOnly={isReadOnly}
         />
       </div>
@@ -477,7 +481,7 @@ if (status === 'loading') {
           name="observations"
           value={formData.observations}
           onChange={handleChange}
-          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-blackcursor-not-allowed' : ''}`}
           readOnly={isReadOnly}
         />
       </div>
@@ -502,7 +506,8 @@ if (status === 'loading') {
                   onChange={handleFileSelect}
                   className="hidden"
                   disabled={isReadOnly}
-                />
+                
+                />    
               </th>
               <th className="py-1 px-2 border-b text-left">File Name</th>
               <th className="py-1 px-2 border-b text-left">Actions</th>
@@ -517,8 +522,8 @@ if (status === 'loading') {
                     <button
                     type='button'
                       onClick={() => downloadFile(file)}
-                      className={`bg-purple-800 text-white hover:bg-purple-700 py-1 px-3 rounded-md mr-2 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
-                      disabled={isReadOnly}
+                      className={`bg-purple-800 text-white hover:bg-purple-700 py-1 px-3 rounded-md mr-2 `}
+                      //disabled={isReadOnly}
                     >
                       View
                     </button>
@@ -552,7 +557,7 @@ if (status === 'loading') {
         name="type_facture"
         value={formData.type_facture}
         onChange={handleChange}
-        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
         disabled={isReadOnly}
       >
         <option value={0} disabled>Sélectionner un type</option>
@@ -569,7 +574,7 @@ if (status === 'loading') {
         name="type_saisie"
         value={formData.type_saisie}
         onChange={handleChange}
-        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
         disabled={isReadOnly}
       >
         <option value="" disabled>Sélectionner un type</option>
@@ -587,7 +592,7 @@ if (status === 'loading') {
         name="stru_ord"
         value={formData.stru_ord}
         onChange={handleChange}
-        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
         disabled={isReadOnly}
       >
         <option value="" disabled>Sélectionner une structure</option>
@@ -604,7 +609,7 @@ if (status === 'loading') {
         name="stru_dest"
         value={formData.stru_dest}
         onChange={handleChange}
-        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
         disabled={isReadOnly}
       >
         <option value="" disabled>Sélectionner une structure</option>
@@ -621,7 +626,7 @@ if (status === 'loading') {
         name="mod_reg"
         value={formData.mod_reg}
         onChange={handleChange}
-        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
         disabled={isReadOnly}
       >
         <option value="" disabled>Sélectionner un mode</option>
@@ -640,7 +645,7 @@ if (status === 'loading') {
           name="num_cheq"
           value={formData.num_cheq}
           onChange={handleChange}
-          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
           readOnly={isReadOnly}
         />
       </div>
@@ -655,7 +660,7 @@ if (status === 'loading') {
           name="rip"
           value={formData.rip}
           onChange={handleChange}
-          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
           readOnly={isReadOnly}
         />
       </div>
@@ -669,7 +674,7 @@ if (status === 'loading') {
         name="montant"
         value={formData.montant}
         onChange={handleChange}
-        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
         readOnly
       />
     </div>
@@ -682,7 +687,7 @@ if (status === 'loading') {
         name="date_facture"
         value={formData.date_facture}
         onChange={handleChange}
-        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : ''}`}
+        className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
         readOnly={isReadOnly}
       />
     </div>

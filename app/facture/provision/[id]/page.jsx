@@ -1,15 +1,28 @@
-'use client';
+//privison has the same structure of a facture with adding a checkbox with also a modify different to facture
+// in the table we have the montant restant a extourner
+
+
+
+'use client'
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'
-import { handleSubmit } from '@/utils/handleSubmit';
-import { uploadFile } from '@/utils/fileupload';
 import { fetchLign } from '@/utils/fetch';
 import {uploadFiles} from '@/utils/fileupload';
 import { useSession } from 'next-auth/react';
-export default function SaisieFacture(props) {
-  const { data: session, status } = useSession();
-  const [files, setFiles] = useState([]); 
+import { handleEdit } from '@/utils/provision/handleEdit';
+import { handleModifier } from '@/utils/provision/handlePut';
+import { fetchFiles } from '@/utils/provision/fetchFiles';
+
+export default function Provision({params}) {
+    const { data: session, status } = useSession();
+
+    const [files, setFiles] = useState([]); 
+    
+  const [isReadOnly,setIsReadonly] = useState(false);
+
+  const [previleges, setPrevileges] = useState(null);
+    
   const router = useRouter()
   const [suppliers, setSuppliers] = useState([]);
   const [struct, setStruct] = useState([]);
@@ -17,21 +30,31 @@ export default function SaisieFacture(props) {
   const [formData, setFormData] = useState({
     intitule: '',
     id_fournisseur: '',
-    reference_facture: '',
+    ref: '',
     date: new Date().toISOString().split('T')[0],
-    gest: session.user.username,
+    gest: session?.user.username,
     observations: '',
-    type_facture: props.type, // New field
-    type_saisie:'', // New field
+    type:'',
     stru_ord: '', // New field
     stru_dest: '', // New field
-    mod_reg: '', // New field
     montant: '', // New field
-    date_facture: '',
-    rip:'0',
-    num_cheq:'0',
-    etat:1
+    date_pro: '',
+    etat:1,
+    extourne:0,
+    date_extourne: ''
   });
+  useEffect(()=>{
+    if (status === 'loading') {
+      // Wait for the session status to resolve
+      return;
+  }
+
+  if (!session) {
+      // Redirect to login if not authenticated
+      router.push('/login');
+      return;
+  }
+  },[])
 
   const [tableData, setTableData] = useState([
     {
@@ -41,26 +64,69 @@ export default function SaisieFacture(props) {
       TVA: '',
       nature: '',
       montantUnitaireHT: 0,
-      quantite: 0,
-      montantTotal: 0
+      qte: 0,
+      montantU: 0,
+      montantRestant: 0
     }
   ]);
 
   const [formError, setFormError] = useState('');
   const [tableError, setTableError] = useState('');
+useEffect(() => {
+    setSearchQuery(params.id);
+    handleEdit(params.id, setFormData, setTableData);
+},[params.id])
+useEffect(() => {
+  if (formData.etat === 2) {
+    setIsReadonly(true);
+  }
+},[formData])
+useEffect(() => {
+  // Check if isReadOnly is true
+  if (isReadOnly) {
+    // Apply styles and disable inputs
+    document.querySelectorAll('input').forEach(input => {
+      input.classList.add('bg-gray-400');
+      input.classList.remove('bg-white');
+      input.disabled = true; // Add disabled attribute
+    });
 
-  const handleChange = async(e) => {
-    const { name, value, type, files } = e.target;
+    document.querySelectorAll('select').forEach(select => {
+      select.classList.add('bg-gray-400');
+      select.classList.remove('bg-white');
+      select.disabled = true; // Add disabled attribute
+    });
+
+    document.querySelectorAll('textarea').forEach(textarea => {
+      textarea.classList.add('bg-gray-400');
+      textarea.classList.remove('bg-white');
+      textarea.disabled = true; // Add disabled attribute
+    });
+  }
+}, [isReadOnly, formData]);
+
+useEffect(() => {
+  if (status === 'authenticated') {
+    setPrevileges(session?.user?.previleges || {});
+  }
+}, [status, session])
+
+  const handleChange = async (e) => {
+    const { name, value, type, files, checked } = e.target;
     
-  
     if (type === 'file') {
       setFormData({ ...formData, [name]: files[0] });
     } else {
       setFormData({ ...formData, [name]: value });
     }
-    
   };
   
+  const handleCheckboxChange = (event) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      extourne: event.target.checked ? 1 : 0
+    }));
+  };
 
   const handleTableChange = async (index, e) => {
     const { name, value } = e.target;
@@ -68,7 +134,8 @@ export default function SaisieFacture(props) {
     newTableData[index] = { ...newTableData[index], [name]: value };
 
     if (name === 'montantU' || name === 'qte') {
-      newTableData[index].montantTotal = (parseFloat(newTableData[index].montantU || 0) * parseFloat(newTableData[index].qte|| 0)).toFixed(2);
+      newTableData[index].montantTotal = (parseFloat(newTableData[index].qte || 0) * parseFloat(newTableData[index].montantU|| 0)).toFixed(2);
+      newTableData[index].montantRestant=newTableData[index].montantTotal
      
     }
     if(name ==='libelle'){
@@ -90,14 +157,12 @@ export default function SaisieFacture(props) {
         codeOperation: '',
         libelle: '',
         compte: '',
-        codeTVA: '',
+        TVA: '',
         nature: '',
-        amputationComplementaire1: '',
-        amputationComplementaire2: '',
-        destination: '',
-        montantU: 0,
         qte: 0,
-        montantTotal: 0
+        montantU: 0,
+        montantTotal: 0,
+        montantRestant: 0
       }
     ]);
   };
@@ -107,16 +172,9 @@ export default function SaisieFacture(props) {
     setTableData(newTableData);
     setFormData({ ...formData, montant: calculateTotal(newTableData) });
   };
- 
-
-  
-  
-  
 
 
-  
-
-  const calculateTotal = (data) => {
+const calculateTotal = (data) => {
     return data.reduce((acc, row) => {
       return acc + parseFloat(row.montantTotal || 0);
     }, 0).toFixed(2);
@@ -145,16 +203,6 @@ export default function SaisieFacture(props) {
   };
 
   useEffect(() => {
-    if (status === 'loading') {
-      // Wait for the session status to resolve
-      return;
-  }
-
-  if (!session) {
-      // Redirect to login if not authenticated
-      router.push('/login');
-      return;
-  }
     const fetchData = async () => {
       try {
         const res = await fetchLign('','',false);
@@ -194,72 +242,172 @@ export default function SaisieFacture(props) {
   useEffect(() => {
     fetchStruct();
   }, []);
+
   
-  const onSubmit = async (e) => {
-    e.preventDefault(); // Prevent form submission
-
-    
-        // If no file is being uploaded, just submit the form
-    let factureId = await handleSubmit(e, formData, tableData, router, setFormError);
-    if (files.length > 0) {
-      const apiUrl = 'http://localhost:3000/api/uploadfile'; // Replace with your API endpoint
-
-        try {
-            const result = await uploadFiles(apiUrl, factureId,null, null,files);
-            console.log('Upload successful:', result);
-        } catch (error) {
-            console.error('Upload failed:', error);
-        }
-    }
-    
-      
-    
-};
-
-
 const handleFileSelect = (e) => {
-  const selectedFiles = Array.from(e.target.files);
-  setFiles((prevFiles) => {
-      // Create a Map to handle unique files based on their names
-      const fileMap = new Map(prevFiles.map((file) => [file.name, file]));
-      selectedFiles.forEach((file) => fileMap.set(file.name, file));
-      return Array.from(fileMap.values());
-  });
-  e.target.value = ''; // Reset file input value to allow re-selection of the same file
-};
-
-// Handle file removal
-const handleFileRemove = (fileName) => {
-  setFiles((prevFiles) =>
-      prevFiles.filter((file) => file.name !== fileName)
-  );
-};
-
-// Handle file download
-const handleFileDownload = (file) => {
-  const url = URL.createObjectURL(file);
+    const selectedFiles = Array.from(e.target.files);
+    setFiles((prevFiles) => {
+        // Create a Map to handle unique files based on their names
+        const fileMap = new Map(prevFiles.map((file) => [file.name, file]));
+        selectedFiles.forEach((file) => fileMap.set(file.name, file));
+        return Array.from(fileMap.values());
+    });
+    e.target.value = ''; // Reset file input value to allow re-selection of the same file
+  };
+  
+  // Handle file removal
+  const handleFileRemove = async(fileName,id) => {
+    if (id){
+      const table = 'files';
+      const resp = await fetch('/api/deletedata', {
+        method: 'delete',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id ,table})},
+      )
+    }
+    setFiles((prevFiles) =>
+        prevFiles.filter((file) => file.name !== fileName)
+    );
+  };
+  
+  // Handle file download
+  function downloadFile(file) {
+    if (file.fileName) {
+      const link = document.createElement('a');
+    link.href = file.url;
+    link.download = file.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    }else{
+      const url = URL.createObjectURL(file);
   const a = document.createElement('a');
   a.href = url;
   a.download = file.name;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url); // Clean up the URL object
+  URL.revokeObjectURL(url);
+    }
+    
+}
+  
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  useEffect(() => {
+    setSearchQuery(params.id);
+   handleEdit(params.id, setFormData, setTableData);
+},[params.id])
+const handleSubmit = async (e,validate) => {
+  validate = validate || false
+  if (validate){
+    await handleModifier(e, formData, params.id, tableData, setFormError, router,true);
+  }else{
+    await handleModifier(e, formData, params.id, tableData, setFormError, router);
+  }
+
+const filesWithoutId = files.filter(file => !file.id); // Filter out files that do have an id
+if (filesWithoutId.length > 0) {
+  console.log(filesWithoutId);
+  const apiUrl = 'http://localhost:3000/api/uploadfile';
+    console.log(filesWithoutId)
+    await uploadFiles(apiUrl, null, null,params.id, filesWithoutId);
+}
+
+}
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const res = await fetchLign('','',false);
+      setLib(res.results);
+      console.log(res.results);
+      await fetchSuppliers(); // Assuming fetchSuppliers is async and should be awaited
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+    try {
+      const res = await fetchFiles(params.id);
+      console.log(res)
+      setFiles(res);
+    } catch (error) {
+      
+    }
+  };
+
+  fetchData();
+}, [params.id]);
+const handleValidation = async (e) => {
+  e.preventDefault();
+
+  // Your validation logic
+  let emptyFormFields = [];
+  for (const [key, value] of Object.entries(formData)) {
+    if (value === '') {
+      emptyFormFields.push(key);
+    }
+  }
+  if (emptyFormFields.length > 0) {
+    console.log("Empty form fields:", emptyFormFields);
+    alert('Please fill in all the fields in the form.');
+    return;
+  }
+
+  let emptyTableRows = [];
+  tableData.forEach((row, index) => {
+    let emptyFieldsInRow = [];
+    for (const [key, value] of Object.entries(row)) {
+      if (value === '') {
+        emptyFieldsInRow.push(key);
+      }
+    }
+    if (emptyFieldsInRow.length > 0) {
+      emptyTableRows.push({ rowIndex: index, emptyFields: emptyFieldsInRow });
+    }
+  });
+  if (emptyTableRows.length > 0) {
+    console.log("Empty table rows:", emptyTableRows);
+    alert('Please fill in all the rows in the table.');
+    return;
+  }
+
+  // Confirm action with user
+  const isConfirmed = window.confirm('Are you sure you want to proceed?');
+  
+  if (isConfirmed) {
+     // Exit if user cancels
+     
+  
+    // Wait for state to update
+    await new Promise((resolve) => {
+      setTimeout(() => resolve(), 50); // Wait for state update
+    });
+  
+    // Log updated form data
+    console.log("FormData after state update:", formData);
+  
+    // Check if state has updated
+    
+      await handleSubmit(e,true);
+      router.push("/facture/provision");
+      // Proceed with form submission logic
+      // router.push('/facture'); // Uncomment this line if navigation is needed
+    
+  }
+
+  // Update form data
+  
 };
 
 
-
-
-
-  
-
   return (
-    <div className=" overlay p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg">
+    <div className=" overlay p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg m-12">
       
       
       
-      <h1 className="text-2xl font-bold mb-4 text-purple-800">Saisie Facture</h1>
-      <form onSubmit={onSubmit} className="space-y-4">
+      <h1 className="text-2xl font-bold mb-4 text-purple-800">Saisie Provision</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
         {formError && <p className="text-red-500">{formError}</p>}
         {tableError && <p className="text-red-500">{tableError}</p>}
 
@@ -302,12 +450,12 @@ const handleFileDownload = (file) => {
     </div>
   </div>
   <div>
-    <label htmlFor="reference_facture" className="block text-gray-800 font-semibold mb-1">Référence</label>
+    <label htmlFor="ref" className="block text-gray-800 font-semibold mb-1">Référence</label>
     <input
       type="text"
-      id="reference_facture"
-      name="reference_facture"
-      value={formData.reference_facture}
+      id="ref"
+      name="ref"
+      value={formData.ref}
       onChange={handleChange}
       className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     />
@@ -323,6 +471,10 @@ const handleFileDownload = (file) => {
       className="w-full border border-purple-800 p-2 rounded-md bg-gray-200 text-gray-600 cursor-not-allowed"
     />
   </div>
+  
+
+
+
   <div>
     <label htmlFor="observations" className="block text-gray-800 font-semibold mb-1">Pièces justificatives</label>
     <textarea
@@ -362,18 +514,19 @@ const handleFileDownload = (file) => {
         {files.length > 0 ? (
           files.map((file) => (
             <tr key={file.name}>
-              <td className="py-1 px-2 border-b text-gray-700">{file.name}</td>
+              <td className="py-1 px-2 border-b text-gray-700">{file.fileName ||file.name }</td>
               <td className="py-1 px-2 border-b">
                 <button
                 type='button'
-                  onClick={() => handleFileDownload(file)}
+                  onClick={() => downloadFile(file)}
                   className="bg-purple-800 text-white hover:bg-purple-700 py-1 px-3 rounded-md mr-2"
                 >
                   View
                 </button>
                 <button
-                  onClick={() => handleFileRemove(file.name)}
+                 onClick={() => handleFileRemove(file.name, file.id)}
                   className="bg-red-500 text-white hover:bg-red-600 py-1 px-3 rounded-md"
+                  disabled = {isReadOnly}
                 >
                   Delete
                 </button>
@@ -391,19 +544,19 @@ const handleFileDownload = (file) => {
     </table>
   </div>
   <div>
-      <label htmlFor="type_facture" className="block text-gray-800 font-semibold mb-1">Type de Facture</label>
+      <label htmlFor="type_facture" className="block text-gray-800 font-semibold mb-1">Type de Provision</label>
       <select
         id="type_facture"
         name="type_facture"
-        value={formData.type_facture}
+        value={formData.type}
         onChange={handleChange}
         className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 `}
         
       >
-        <option value={0} disabled>Sélectionner un type</option>
-        <option value={1}>Facture Fournisseur</option>
-        <option value={2}>Facture Salarié</option>
-        <option value={3}>Facture Client</option>
+        <option value='' disabled>Sélectionner un type</option>
+        <option value={1}>Provision Fournisseur</option>
+        <option value={2}>Provision Salarié</option>
+        <option value={3}>Provision Client</option>
       </select>
     </div>
 
@@ -438,50 +591,7 @@ const handleFileDownload = (file) => {
       ))}
     </select>
   </div>
-
-  <div>
-    <label htmlFor="mod_reg" className="block text-gray-800 font-semibold mb-1">Mode de Règlement</label>
-    <select
-      id="mod_reg"
-      name="mod_reg"
-      value={formData.mod_reg}
-      onChange={handleChange}
-      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
-    >
-      <option value="" disabled>Sélectionner un mode</option>
-      <option value="cheque">Chèque</option>
-      <option value="virement">Virement</option>
-      <option value="espece">Espèce</option>
-    </select>
-  </div>
-  {formData.mod_reg === 'cheque' && (
     <div>
-      <label htmlFor="num_cheq" className="block text-gray-800 font-semibold mb-1">Numéro de Chèque</label>
-      <input
-        type="text"
-        id="num_cheq"
-        name="num_cheq"
-        value={formData.num_cheq}
-        onChange={handleChange}
-        className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
-      />
-    </div>
-  )}
-  {formData.mod_reg === 'virement' && (
-    <div>
-      <label htmlFor="num_virement" className="block text-gray-800 font-semibold mb-1">Numéro de Virement</label>
-      <input
-        type="text"
-        id="num_virement"
-        name="num_virement"
-        value={formData.num_virement}
-        onChange={handleChange}
-        className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
-      />
-    </div>
-  )}
-
-  <div>
     <label htmlFor="montant" className="block text-gray-800 font-semibold mb-1">Montant</label>
     <input
       type="number"
@@ -495,12 +605,24 @@ const handleFileDownload = (file) => {
   </div>
 
   <div>
-    <label htmlFor="date_fact" className="block text-gray-800 font-semibold mb-1">Date Facture</label>
+    <label htmlFor="date_pro" className="block text-gray-800 font-semibold mb-1">Date Provision</label>
     <input
       type="date"
-      id="date_facture"
-      name="date_facture"
-      value={formData.date_facture}
+      id="date_pro"
+      name="date_pro"
+      value={formData.date_pro}
+      onChange={handleChange}
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+    />
+  </div>
+  <div>
+    <label htmlFor="date_extourne" className="block text-gray-800 font-semibold mb-1">Date d'extourne</label>
+    <input
+      type="date"
+      id="date_extourne"
+      name="date_extourne"
+      value={formData.date_extourne}
+      min={formData.date_pro}
       onChange={handleChange}
       className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     />
@@ -523,6 +645,7 @@ const handleFileDownload = (file) => {
               <th className="border px-2 py-2">Montant Unitaire HT</th>
               <th className="border px-2 py-2">Quantité</th>
               <th className="border px-2 py-2">Montant Total</th>
+              <th className="border px-2 py-2">Montant restant a extourner</th>
               <th className="border px-2 py-2">Action</th>
             </tr>
           </thead>
@@ -561,15 +684,17 @@ const handleFileDownload = (file) => {
                     value={row.compte||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
+
                   />
                 </td>
                 <td className="border  py-2">
                   <input
                     type="text"
-                    name="codeTVA"
-                    value={row.codeTVA||''}
+                    name="TVA"
+                    value={row.TVA||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
+                    
                   />
                 </td>
                 
@@ -580,6 +705,7 @@ const handleFileDownload = (file) => {
                     value={row.nature||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
+                    
                   />
                 </td>
                 <td className="border  py-2">
@@ -589,6 +715,7 @@ const handleFileDownload = (file) => {
                     value={row.montantU||'0'}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
+                    
                   />
                 </td>
                 <td className="border  py-2">
@@ -610,10 +737,21 @@ const handleFileDownload = (file) => {
                     readOnly
                   />
                 </td>
+                <td className="border  py-2">
+                  <input
+                    type="text"
+                    name="montantRestant"
+                    value={row.montantRestant||'0'}
+                    onChange={(e) => handleTableChange(index, e)}
+                    className="w-full border p-1 rounded"
+                    readOnly
+                  />
+                </td>
                 <td className="border py-2">
                   <button
                     type="button"
                     onClick={() => handleDeleteRow(index)}
+                    disabled={isReadOnly}
                     className="bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600"
                   >
                     Supprimer
@@ -625,19 +763,33 @@ const handleFileDownload = (file) => {
             
           </tbody>
         </table>
-        <button
+        {!isReadOnly && (
+  <>
+    <button
+      type="button"
+      onClick={handleAddRow}
+      className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 mt-4"
+    >
+      Ajouter une ligne
+    </button>
+    <button
+      type="submit"
+      className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mt-4 ml-4"
+    >
+      Modifier et Enregistrer
+    </button>
+    
+          <button
           type="button"
-          onClick={handleAddRow}
-          className="bg-purple-500 text-white py-2 px-4 rounded hover:bg-green-600 mt-4"
+          onClick={handleValidation}
+          className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600 mt-4"
         >
-          Ajouter une ligne
+          valider
         </button>
-        <button
-          type="submit"
-          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mt-4"
-        >
-          Enregistrer
-        </button>
+        
+  </>
+)}
+
       </form>
     </div>
   );

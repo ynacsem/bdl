@@ -1,15 +1,21 @@
-'use client';
+//privison has the same structure of a facture with adding a checkbox with also a modify different to facture
+// in the table we have the montant restant a extourner
+
+
+
+'use client'
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'
-import { handleSubmit } from '@/utils/handleSubmit';
+import { handleSubmit } from '@/utils/provision/handleSubmit';
 import { uploadFile } from '@/utils/fileupload';
 import { fetchLign } from '@/utils/fetch';
 import {uploadFiles} from '@/utils/fileupload';
 import { useSession } from 'next-auth/react';
-export default function SaisieFacture(props) {
-  const { data: session, status } = useSession();
-  const [files, setFiles] = useState([]); 
+
+export default function Provision() {
+    const { data: session, status } = useSession();
+    const [files, setFiles] = useState([]); 
   const router = useRouter()
   const [suppliers, setSuppliers] = useState([]);
   const [struct, setStruct] = useState([]);
@@ -17,20 +23,19 @@ export default function SaisieFacture(props) {
   const [formData, setFormData] = useState({
     intitule: '',
     id_fournisseur: '',
-    reference_facture: '',
+    ref: '',
     date: new Date().toISOString().split('T')[0],
-    gest: session.user.username,
+    gest: session?.user.username,
     observations: '',
-    type_facture: props.type, // New field
-    type_saisie:'', // New field
+    type:'',
     stru_ord: '', // New field
     stru_dest: '', // New field
-    mod_reg: '', // New field
     montant: '', // New field
-    date_facture: '',
-    rip:'0',
-    num_cheq:'0',
-    etat:1
+    date_pro: '',
+     // New field
+    date_extourne: '',
+    etat:1,
+    extourne:0
   });
 
   const [tableData, setTableData] = useState([
@@ -42,33 +47,39 @@ export default function SaisieFacture(props) {
       nature: '',
       montantUnitaireHT: 0,
       quantite: 0,
-      montantTotal: 0
+      montantTotal: 0,
+      montantRestant: 0
     }
   ]);
 
   const [formError, setFormError] = useState('');
   const [tableError, setTableError] = useState('');
 
-  const handleChange = async(e) => {
-    const { name, value, type, files } = e.target;
+  const handleChange = async (e) => {
+    const { name, value, type, files, checked } = e.target;
     
-  
     if (type === 'file') {
       setFormData({ ...formData, [name]: files[0] });
     } else {
       setFormData({ ...formData, [name]: value });
     }
-    
   };
   
+  const handleCheckboxChange = (event) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      extourne: event.target.checked ? 1 : 0
+    }));
+  };
 
   const handleTableChange = async (index, e) => {
     const { name, value } = e.target;
     const newTableData = [...tableData];
     newTableData[index] = { ...newTableData[index], [name]: value };
 
-    if (name === 'montantU' || name === 'qte') {
-      newTableData[index].montantTotal = (parseFloat(newTableData[index].montantU || 0) * parseFloat(newTableData[index].qte|| 0)).toFixed(2);
+    if (name === 'montantUnitaireHT' || name === 'quantite') {
+      newTableData[index].montantTotal = (parseFloat(newTableData[index].montantUnitaireHT || 0) * parseFloat(newTableData[index].quantite|| 0)).toFixed(2);
+      newTableData[index].montantRestant=newTableData[index].montantTotal
      
     }
     if(name ==='libelle'){
@@ -90,14 +101,12 @@ export default function SaisieFacture(props) {
         codeOperation: '',
         libelle: '',
         compte: '',
-        codeTVA: '',
+        TVA: '',
         nature: '',
-        amputationComplementaire1: '',
-        amputationComplementaire2: '',
-        destination: '',
-        montantU: 0,
-        qte: 0,
-        montantTotal: 0
+        montantUnitaireHT: 0,
+        quantite: 0,
+        montantTotal: 0,
+        montantRestant: 0
       }
     ]);
   };
@@ -107,16 +116,9 @@ export default function SaisieFacture(props) {
     setTableData(newTableData);
     setFormData({ ...formData, montant: calculateTotal(newTableData) });
   };
- 
-
-  
-  
-  
 
 
-  
-
-  const calculateTotal = (data) => {
+const calculateTotal = (data) => {
     return data.reduce((acc, row) => {
       return acc + parseFloat(row.montantTotal || 0);
     }, 0).toFixed(2);
@@ -145,16 +147,6 @@ export default function SaisieFacture(props) {
   };
 
   useEffect(() => {
-    if (status === 'loading') {
-      // Wait for the session status to resolve
-      return;
-  }
-
-  if (!session) {
-      // Redirect to login if not authenticated
-      router.push('/login');
-      return;
-  }
     const fetchData = async () => {
       try {
         const res = await fetchLign('','',false);
@@ -193,72 +185,75 @@ export default function SaisieFacture(props) {
 
   useEffect(() => {
     fetchStruct();
-  }, []);
+    
+      if (status === 'loading') {
+        // Wait for the session status to resolve
+        return;
+    }
   
-  const onSubmit = async (e) => {
+    if (!session) {
+        // Redirect to login if not authenticated
+        router.push('/login');
+        return;
+    }
+    
+  }, []);
+
+  const onSubmit = async (e) => {//to be changed
     e.preventDefault(); // Prevent form submission
 
     
         // If no file is being uploaded, just submit the form
-    let factureId = await handleSubmit(e, formData, tableData, router, setFormError);
+    let provisionId = await handleSubmit(e, formData, tableData, router, setFormError);
     if (files.length > 0) {
       const apiUrl = 'http://localhost:3000/api/uploadfile'; // Replace with your API endpoint
 
         try {
-            const result = await uploadFiles(apiUrl, factureId,null, null,files);
+            console.log('provisionId',provisionId)
+            const result = await uploadFiles(apiUrl, null,null,provisionId, files);
             console.log('Upload successful:', result);
         } catch (error) {
             console.error('Upload failed:', error);
         }
     }
-    
-      
-    
 };
-
-
 const handleFileSelect = (e) => {
-  const selectedFiles = Array.from(e.target.files);
-  setFiles((prevFiles) => {
-      // Create a Map to handle unique files based on their names
-      const fileMap = new Map(prevFiles.map((file) => [file.name, file]));
-      selectedFiles.forEach((file) => fileMap.set(file.name, file));
-      return Array.from(fileMap.values());
-  });
-  e.target.value = ''; // Reset file input value to allow re-selection of the same file
-};
-
-// Handle file removal
-const handleFileRemove = (fileName) => {
-  setFiles((prevFiles) =>
-      prevFiles.filter((file) => file.name !== fileName)
-  );
-};
-
-// Handle file download
-const handleFileDownload = (file) => {
-  const url = URL.createObjectURL(file);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url); // Clean up the URL object
-};
-
-
-
-
-
+    const selectedFiles = Array.from(e.target.files);
+    setFiles((prevFiles) => {
+        // Create a Map to handle unique files based on their names
+        const fileMap = new Map(prevFiles.map((file) => [file.name, file]));
+        selectedFiles.forEach((file) => fileMap.set(file.name, file));
+        return Array.from(fileMap.values());
+    });
+    e.target.value = ''; // Reset file input value to allow re-selection of the same file
+  };
   
+  // Handle file removal
+  const handleFileRemove = (fileName) => {
+    setFiles((prevFiles) =>
+        prevFiles.filter((file) => file.name !== fileName)
+    );
+  };
+  
+  // Handle file download
+  const handleFileDownload = (file) => {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url); // Clean up the URL object
+  };
+
 
   return (
-    <div className=" overlay p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg">
+    <div className=" overlay p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg m-12">
       
       
       
-      <h1 className="text-2xl font-bold mb-4 text-purple-800">Saisie Facture</h1>
+      <h1 className="text-2xl font-bold mb-4 text-purple-800">Saisie Provision</h1>
       <form onSubmit={onSubmit} className="space-y-4">
         {formError && <p className="text-red-500">{formError}</p>}
         {tableError && <p className="text-red-500">{tableError}</p>}
@@ -302,12 +297,12 @@ const handleFileDownload = (file) => {
     </div>
   </div>
   <div>
-    <label htmlFor="reference_facture" className="block text-gray-800 font-semibold mb-1">Référence</label>
+    <label htmlFor="ref" className="block text-gray-800 font-semibold mb-1">Référence</label>
     <input
       type="text"
-      id="reference_facture"
-      name="reference_facture"
-      value={formData.reference_facture}
+      id="ref"
+      name="ref"
+      value={formData.ref}
       onChange={handleChange}
       className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     />
@@ -323,6 +318,10 @@ const handleFileDownload = (file) => {
       className="w-full border border-purple-800 p-2 rounded-md bg-gray-200 text-gray-600 cursor-not-allowed"
     />
   </div>
+  
+
+
+
   <div>
     <label htmlFor="observations" className="block text-gray-800 font-semibold mb-1">Pièces justificatives</label>
     <textarea
@@ -391,19 +390,19 @@ const handleFileDownload = (file) => {
     </table>
   </div>
   <div>
-      <label htmlFor="type_facture" className="block text-gray-800 font-semibold mb-1">Type de Facture</label>
+      <label htmlFor="type" className="block text-gray-800 font-semibold mb-1">Type de Provision</label>
       <select
-        id="type_facture"
-        name="type_facture"
-        value={formData.type_facture}
+        id="type"
+        name="type"
+        value={formData.type}
         onChange={handleChange}
         className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 `}
         
       >
-        <option value={0} disabled>Sélectionner un type</option>
-        <option value={1}>Facture Fournisseur</option>
-        <option value={2}>Facture Salarié</option>
-        <option value={3}>Facture Client</option>
+        <option value='' disabled>Sélectionner un type</option>
+        <option value={1}>Provision Fournisseur</option>
+        <option value={2}>Provision Salarié</option>
+        <option value={3}>Provision Client</option>
       </select>
     </div>
 
@@ -438,50 +437,7 @@ const handleFileDownload = (file) => {
       ))}
     </select>
   </div>
-
-  <div>
-    <label htmlFor="mod_reg" className="block text-gray-800 font-semibold mb-1">Mode de Règlement</label>
-    <select
-      id="mod_reg"
-      name="mod_reg"
-      value={formData.mod_reg}
-      onChange={handleChange}
-      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
-    >
-      <option value="" disabled>Sélectionner un mode</option>
-      <option value="cheque">Chèque</option>
-      <option value="virement">Virement</option>
-      <option value="espece">Espèce</option>
-    </select>
-  </div>
-  {formData.mod_reg === 'cheque' && (
     <div>
-      <label htmlFor="num_cheq" className="block text-gray-800 font-semibold mb-1">Numéro de Chèque</label>
-      <input
-        type="text"
-        id="num_cheq"
-        name="num_cheq"
-        value={formData.num_cheq}
-        onChange={handleChange}
-        className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
-      />
-    </div>
-  )}
-  {formData.mod_reg === 'virement' && (
-    <div>
-      <label htmlFor="num_virement" className="block text-gray-800 font-semibold mb-1">Numéro de Virement</label>
-      <input
-        type="text"
-        id="num_virement"
-        name="num_virement"
-        value={formData.num_virement}
-        onChange={handleChange}
-        className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
-      />
-    </div>
-  )}
-
-  <div>
     <label htmlFor="montant" className="block text-gray-800 font-semibold mb-1">Montant</label>
     <input
       type="number"
@@ -495,13 +451,25 @@ const handleFileDownload = (file) => {
   </div>
 
   <div>
-    <label htmlFor="date_fact" className="block text-gray-800 font-semibold mb-1">Date Facture</label>
+    <label htmlFor="date_pro" className="block text-gray-800 font-semibold mb-1">Date Provision</label>
     <input
       type="date"
-      id="date_facture"
-      name="date_facture"
-      value={formData.date_facture}
+      id="date_pro"
+      name="date_pro"
+      value={formData.date_pro}
       onChange={handleChange}
+      className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
+    />
+  </div>
+  <div>
+    <label htmlFor="date_extourne" className="block text-gray-800 font-semibold mb-1">Date d'extourne</label>
+    <input
+      type="date"
+      id="date_extourne"
+      name="date_extourne"
+      value={formData.date_extourne}
+      onChange={handleChange}
+      min={formData.date_pro}
       className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     />
   </div>
@@ -523,6 +491,7 @@ const handleFileDownload = (file) => {
               <th className="border px-2 py-2">Montant Unitaire HT</th>
               <th className="border px-2 py-2">Quantité</th>
               <th className="border px-2 py-2">Montant Total</th>
+              <th className="border px-2 py-2">Montant restant a extourner</th>
               <th className="border px-2 py-2">Action</th>
             </tr>
           </thead>
@@ -566,8 +535,8 @@ const handleFileDownload = (file) => {
                 <td className="border  py-2">
                   <input
                     type="text"
-                    name="codeTVA"
-                    value={row.codeTVA||''}
+                    name="TVA"
+                    value={row.TVA||''}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -585,8 +554,8 @@ const handleFileDownload = (file) => {
                 <td className="border  py-2">
                   <input
                     type="number"
-                    name="montantU"
-                    value={row.montantU||'0'}
+                    name="montantUnitaireHT"
+                    value={row.montantUnitaireHT||'0'}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -594,8 +563,8 @@ const handleFileDownload = (file) => {
                 <td className="border  py-2">
                   <input
                     type="number"
-                    name="qte"
-                    value={row.qte||'0'}
+                    name="quantite"
+                    value={row.quantite||'0'}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                   />
@@ -605,6 +574,16 @@ const handleFileDownload = (file) => {
                     type="text"
                     name="montantTotal"
                     value={row.montantTotal||'0'}
+                    onChange={(e) => handleTableChange(index, e)}
+                    className="w-full border p-1 rounded"
+                    readOnly
+                  />
+                </td>
+                <td className="border  py-2">
+                  <input
+                    type="text"
+                    name="montantRestant"
+                    value={row.montantRestant||'0'}
                     onChange={(e) => handleTableChange(index, e)}
                     className="w-full border p-1 rounded"
                     readOnly

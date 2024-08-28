@@ -177,5 +177,60 @@ export const fetchLign = async (fil, isOp, isFilter) => {
       console.error('Error fetching libelle:', error);
     }
   };
+  export const fetchAllProvision = async () => {
+    const field = 'libelle,date,ref,gest,type,montant,etat,date_pro,extourne'; // Include all necessary fields
+    const table = 'provision';
+    const filters = ''; // Empty filters to fetch all provisions
+    const query = new URLSearchParams({ field, table, filters }).toString();
+    const url = `/api/getdata?${query}`;
+
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+
+        // Check if results are present
+        if (!result.results || result.results.length === 0) {
+            console.warn('No provisions found.');
+            return [];
+        }
+
+        // Function to check if a date is valid
+        const isValidDate = (dateString) => {
+            const date = new Date(dateString);
+            return !isNaN(date.getTime());
+        };
+
+        // Function to add one day to a valid date
+        const addOneDay = (dateString) => {
+            if (!isValidDate(dateString) || dateString === '0000-00-00') {
+                return ''; // Return empty string for invalid or placeholder dates
+            }
+
+            const date = new Date(dateString);
+            date.setDate(date.getDate() + 1); // Add one day
+            return date.toISOString().split('T')[0]; // Return in 'yyyy-mm-dd' format
+        };
+
+        // Sanitize all entries in results
+        const sanitizedData = result.results.map(entry => 
+            Object.fromEntries(
+                Object.entries(entry).map(([key, value]) => [key, value === null ? '' : value])
+            )
+        );
+
+        // Format the date fields with one day added
+        const formattedData = sanitizedData.map(data => ({
+            ...data,
+            date: addOneDay(data.date),
+            date_pro: addOneDay(data.date_pro), // Add formatting for any other date fields as necessary
+        }));
+
+        return formattedData;
+    } catch (error) {
+        console.error('Error fetching all provisions:', error);
+        throw error; // Propagate error to caller
+    }
+};
+
   
   

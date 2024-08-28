@@ -1,17 +1,18 @@
 export const fetchAcompte = async (searchQuery) => {
-    const field = 'id,type_facture,id_fournisseur,stru_ord,stru_dest,libelle_acompte,date,numacmpt,montant,observations,dateacmpt,gest,date_echeance';
+    const fields = 'id,type_facture,id_fournisseur,stru_ord,stru_dest,libelle_acompte,date,numacmpt,montant,dateacmpt,gest,date_echeance,etat';
     const table = 'acompte';
     let filters = '';
 
     if (searchQuery) {
         filters = `id = ${searchQuery}`; // Apply filter if searchQuery is provided
     }
-    const query = new URLSearchParams({ field, table, filters }).toString();
+    const query = new URLSearchParams({ fields, table, filters }).toString();
     const url = `/api/getdata?${query}`;
 
     try {
         const response = await fetch(url);
         const result = await response.json();
+        console.log('gg',result.results[0]);
 
         // Replace null values with empty strings
         let sanitizedData = Object.fromEntries(
@@ -50,20 +51,20 @@ export const fetchAcompte = async (searchQuery) => {
     }
 };
 export const fetchAcompteDetails = async (idAcompte) => {
-    const field = 'id,id_acompte,gestionnaire_bap,solde_a_encaisser,date_valuer,date_forcage_remboursement,date_encaissement,num_cheque,ref_pointage,ref_a_rappeler,mode_encaisement,numero,compte';
+    const fields = 'id,id_acompte,gestionnaire_bap,solde_a_encaisser,date_valuer,date_forcage_remboursement,date_encaissement,num_cheque,ref_pointage,ref_a_rappeler,mode_encaisement,numero,compte';
     const table = 'remboursement';
     let filters = '';
 
     if (idAcompte) {
         filters = `id_acompte = ${idAcompte}`; // Apply filter if idAcompte is provided
     }
-    const query = new URLSearchParams({ field, table, filters }).toString();
+    const query = new URLSearchParams({ fields, table, filters }).toString();
     const url = `/api/getdata?${query}`;
 
     try {
         const response = await fetch(url);
         const result = await response.json();
-
+        console.log('hello',result.results[0]);
         // Replace null values with empty strings
         let sanitizedData = Object.fromEntries(
             Object.entries(result.results[0]).map(([key, value]) => [key, value === null ? '' : value])
@@ -89,9 +90,9 @@ export const fetchAcompteDetails = async (idAcompte) => {
         // Format the date fields with one day added
         sanitizedData = {
             ...sanitizedData,
-            date_echeance: addOneDay(sanitizedData.date_echeance),
             date_valuer: addOneDay(sanitizedData.date_valuer),
             date_forcage_remboursement: addOneDay(sanitizedData.date_forcage_remboursement),
+            date_encaissement: addOneDay(sanitizedData.date_encaissement),
         };
         console.log(sanitizedData)
         return sanitizedData;
@@ -101,7 +102,7 @@ export const fetchAcompteDetails = async (idAcompte) => {
     }
 };
 export const fetchAllAcomptes = async () => {
-    const field = 'id,type_facture,date,montant,gest,libelle_acompte'
+    const field = 'id,type_facture,date,montant,gest,libelle_acompte,etat'
     const table = 'acompte'
     const query = new URLSearchParams({ field, table }).toString();
     const url = `/api/getdata?${query}`;
@@ -137,6 +138,7 @@ export const fetchAllAcomptes = async () => {
         const formattedData = sanitizedData.map(data => ({
             ...data,
             date: addOneDay(data.date),
+            date_echeance: addOneDay(data.date_echeance),
             
         }));
 

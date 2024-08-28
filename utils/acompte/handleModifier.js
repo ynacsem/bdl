@@ -1,7 +1,11 @@
-export const handleModifier = async (e, formDataAcompte, formDataRemboursement,  router) => {
+import {factureEtat} from "../backend";
+export const handleModifier = async (e, formDataAcompte, formDataRemboursement,  router,validate) => {
     e.preventDefault();
+    
+    validate = validate || false
   
     try {
+
       // Convert formDataAcompte according to table schema
       let {
         type_facture, 
@@ -12,9 +16,19 @@ export const handleModifier = async (e, formDataAcompte, formDataRemboursement, 
         date, 
         numacmpt, 
         montant, 
-        observations, 
         dateacmpt
       } = formDataAcompte;
+      let etat = 1;
+     console.log('ggggggg',formDataAcompte)
+     console.log('ggggggg',formDataRemboursement)
+     const state = factureEtat(formDataAcompte);
+    const state2 = factureEtat(formDataRemboursement)
+    if (state === 3 || state2 === 3) {
+        etat = 3
+    } 
+    if (validate){
+      etat = 2
+    }
   
       montant = montant.toString();
   
@@ -35,9 +49,9 @@ export const handleModifier = async (e, formDataAcompte, formDataRemboursement, 
             libelle_acompte,
             date, // Ensure date is in YYYY-MM-DD format
             numacmpt,
-            montant: parseFloat(montant).toFixed(2), // Convert to decimal
-            observations,
+            montant: parseFloat(montant).toFixed(2),
             dateacmpt,
+            etat
           },
         }),
       });
@@ -58,7 +72,6 @@ export const handleModifier = async (e, formDataAcompte, formDataRemboursement, 
       let {
         gestionnaire_bap,
         solde_a_encaisser,
-        date_echeance,
         date_valuer,
         date_forcage_remboursement,
         date_encaissement,
@@ -81,8 +94,7 @@ export const handleModifier = async (e, formDataAcompte, formDataRemboursement, 
           data: {
             id_acompte: formDataRemboursement.id_acompte, // Use the ID from the acompte submission
             gestionnaire_bap,
-            solde_a_encaisser,
-            date_echeance, // Ensure date is in YYYY-MM-DD format
+            solde_a_encaisser, // Ensure date is in YYYY-MM-DD format
             date_valuer, // Ensure date is in YYYY-MM-DD format
             date_forcage_remboursement, // Ensure date is in YYYY-MM-DD format
             date_encaissement, // Ensure date is in YYYY-MM-DD format

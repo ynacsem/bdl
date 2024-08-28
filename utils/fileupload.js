@@ -1,4 +1,4 @@
-export async function uploadFiles(apiUrl, factureId, acompteId, files) {
+export async function uploadFiles(apiUrl, factureId, acompteId,provisionId, files) {
     try {
         // Create a new FormData object
         const formData = new FormData();
@@ -8,14 +8,20 @@ export async function uploadFiles(apiUrl, factureId, acompteId, files) {
             formData.append('facture_id', factureId);
         } else if (acompteId) {
             formData.append('acompte_id', acompteId);
+        }else if (provisionId) {
+            formData.append('provision_id', provisionId);
         }
+        for (let [key, value] of formData.entries()) {
+            console.log('key, value');
+            console.log(key, value);
+        }
+
 
         // Append each file and its name to FormData
         files.forEach((file) => {
             formData.append('file_data', file);
             formData.append('file_name', file.name);
         });
-
         // Send POST request to API
         const response = await fetch(apiUrl, {
             method: 'POST',

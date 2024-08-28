@@ -2,10 +2,10 @@ import mysql from 'mysql2/promise';
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
-        const { facture_id, acompte_id } = req.query;
+        const { facture_id, acompte_id,provision_id } = req.query;
 
         // Check if neither facture_id nor acompte_id is provided
-        if (!facture_id && !acompte_id) {
+        if (!facture_id && !acompte_id && !provision_id) {
             return res.status(400).json({ error: 'Missing facture_id or acompte_id' });
         }
 
@@ -26,6 +26,9 @@ export default async function handler(req, res) {
             } else if (acompte_id) {
                 query += 'acompte_id = ?';
                 queryParams.push(acompte_id);
+            }else if (provision_id) {
+                query += 'provision_id = ?';
+                queryParams.push(provision_id);
             }
 
             const [rows] = await connection.execute(query, queryParams);

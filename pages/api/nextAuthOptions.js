@@ -1,4 +1,3 @@
-// nextAuthOptions.js
 import Credentials from "next-auth/providers/credentials";
 import executeQuery from "./mysql";
 
@@ -11,10 +10,10 @@ export const authOptions = {
     Credentials({
       type: "credentials",
       credentials: {
-        email: {
-          label: "Your Email",
-          type: "email",
-          placeholder: "Enter your email",
+        code_user: {
+          label: "Your Code User",
+          type: "text",
+          placeholder: "Enter your code user",
         },
         password: {
           label: "Password",
@@ -23,11 +22,11 @@ export const authOptions = {
         },
       },
       async authorize(credentials) {
-        const { email, password } = credentials;
+        const { code_user, password } = credentials;
       
         // Verify credentials
-        const userQuery = `SELECT * FROM user WHERE email = ? AND mot_pass = ?`;
-        const userResult = await executeQuery(userQuery, [email, password]);
+        const userQuery = `SELECT * FROM user WHERE code_user = ? AND mot_pass = ? AND is_actif = 1`;
+        const userResult = await executeQuery(userQuery, [code_user, password]);
       
         if (userResult && userResult.length > 0) {
           const userId = userResult[0].code_user;
@@ -36,8 +35,16 @@ export const authOptions = {
           const privilegeQuery = `
             SELECT 
               p.admin,
-              p.prev1,
-              p.prev2
+              p.VALIDATION_FACTURE,
+              p.VALIDATION_ACOMPTE,
+              p.VALIDATION_PROVISION,
+              p.MODIFICATION_PROVISION,
+              p.MODIFICATION_FACTURE,
+              p.MODIFICATION_ACOMPTE,
+              p.SAISIE_FACTURE,
+              p.SAISIE_PROVISION,
+              p.SAISIE_ACOMPTE
+              
             FROM 
               user u
             JOIN 
@@ -58,21 +65,19 @@ export const authOptions = {
               email: user.email,
               username: user.nom,
               previleges, // Add privileges object
+              is_actif: user.is_actif,
             };
           }
         }
       
         return null; // Return null if authentication fails
       }
-      
-      
-      
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.code_user;
+        token.id = user.id;
         token.email = user.email;
         token.username = user.username;
         token.previleges = user.previleges; // Include privileges in the token
@@ -89,5 +94,4 @@ export const authOptions = {
       return session;
     },
   },
-  
 };

@@ -23,6 +23,7 @@ export default async function handler(req, res) {
             try {
                 const facture_id = fields.facture_id ? parseInt(fields.facture_id[0], 10) : null;
                 const acompte_id = fields.acompte_id ? parseInt(fields.acompte_id[0], 10) : null;
+                const provision_id = fields.provision_id ? parseInt(fields.provision_id[0], 10) : null;
 
                 // Validate the ids
                 if (facture_id && isNaN(facture_id)) {
@@ -30,6 +31,9 @@ export default async function handler(req, res) {
                 }
                 if (acompte_id && isNaN(acompte_id)) {
                     throw new Error('Invalid acompte_id');
+                }
+                if (provision_id && isNaN(provision_id)) {
+                    throw new Error('Invalid provision_id');
                 }
 
                 // Handle multiple files
@@ -50,10 +54,10 @@ export default async function handler(req, res) {
                         password: '',
                     });
 
-                    // Insert file into database
+                    // Insert file into database with provision_id
                     const [result] = await connection.execute(
-                        'INSERT INTO files (file_data, facture_id, acompte_id, file_name) VALUES (?, ?, ?, ?)',
-                        [fileBuffer, facture_id || null, acompte_id || null, fileName]
+                        'INSERT INTO files (file_data, facture_id, acompte_id, provision_id, file_name) VALUES (?, ?, ?, ?, ?)',
+                        [fileBuffer, facture_id || null, acompte_id || null, provision_id || null, fileName]
                     );
 
                     await connection.end();

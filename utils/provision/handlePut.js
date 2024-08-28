@@ -1,17 +1,18 @@
 
 //used in modify facture    
-import {factureEtat} from "./backend";
+import {factureEtat} from "../backend";
 export const handleModifier = async (e, formData, searchQuery, tableData, setFormError, router,validate) => {
     e.preventDefault();
     validate = validate || false
     // Extract the formData including the observation field
-    let {intitule, id_fournisseur, reference_facture, date, gest, observations,  type_facture, type_saisie, stru_ord, stru_dest, mod_reg, montant, date_facture,rip,
-        num_cheq,etat } = formData;
+    let {intitule, id_fournisseur, ref, date, gest, observations,  type, stru_ord, stru_dest, montant, date_pro,etat ,extourne,date_extourne} = formData;
+    etat = 1
     if (validate){
         etat = 2;
     }
     const state = factureEtat(formData);
     const state2 = factureEtat(tableData)
+    console.log('state',state,state2)
     if (state === 3 || state2 === 3) {
         etat = 3
     }
@@ -26,25 +27,23 @@ export const handleModifier = async (e, formData, searchQuery, tableData, setFor
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                table: 'facture',
+                table: 'provision',
                 id: searchQuery,
                 data: {
                     intitule,
                     id_fournisseur,
-                    reference_facture,
+                    ref,
                     date,
                     gest,
                     observations,
-                    type_facture,
-                    type_saisie,
+                    type,
                     stru_ord,
                     stru_dest,
-                    mod_reg,
                     montant,
-                    date_facture,
-                    num_cheq,
-                    rip,
-                    etat
+                    date_pro,
+                    etat,
+                    extourne,
+                    date_extourne
                 },
             }),
         });
@@ -56,14 +55,15 @@ export const handleModifier = async (e, formData, searchQuery, tableData, setFor
         }
 
         // Alert the ID of the facture
-        alert(`Facture ID: ${searchQuery}`);
+        alert(`Provision ID: ${searchQuery}`);
         //upload the files from here
         // Submit line data
         await Promise.all(tableData.map(async (line) => {
-            const id_facture = Number(searchQuery); // Convert to a number if necessary
-            let { libelle = '', montantU = '', codeTVA = '', qte = '' } = line;
+            const id_prov = Number(searchQuery); // Convert to a number if necessary
+            let { libelle = '', montantU = '', TVA = '', qte = '',montantRestant = '' } = line;
             qte = qte ? qte.toString() : '';
             montantU = montantU ? montantU.toString() : ''
+            let mnt_rest = montantRestant.toString();
             
             if (!line.id) {
                 try {
@@ -73,13 +73,14 @@ export const handleModifier = async (e, formData, searchQuery, tableData, setFor
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            table: 'ligne_fact',
+                            table: 'pro_ligne',
                             data: {
-                                id_facture,
+                                id_prov,
                                 libelle,
                                 montantU,
-                                TVA: codeTVA,
+                                TVA,
                                 qte,
+                                mnt_rest
                             },
                         }),
                     });
@@ -101,14 +102,15 @@ export const handleModifier = async (e, formData, searchQuery, tableData, setFor
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            table: 'ligne_fact',
+                            table: 'pro_ligne',
                             id: line.id,
                             data: {
-                                id_facture,
+                                id_prov,
                                 libelle,
                                 montantU,
-                                TVA: codeTVA,
+                                TVA,
                                 qte,
+                                mnt_rest
                             },
                         }),
                     });

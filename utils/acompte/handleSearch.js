@@ -15,7 +15,7 @@ export const handleSearch = async (idAcompte, setFormData, setTableData,setFiles
       dateacmpt: prevData.dateacmpt.split('T')[0], // Format date to 'yyyy-MM-dd'
     }));
 
-    console.log('Form Data:', sanitizedFormData);
+    console.log('Form Data1:', sanitizedFormData);
     try {
       const sanitizedFiles = await fetchFilesByAcompteId(idAcompte);
       setFiles(sanitizedFiles);

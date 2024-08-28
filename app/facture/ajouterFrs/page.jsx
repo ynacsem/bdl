@@ -2,11 +2,21 @@
 import React from 'react'
 import AjtFrs from '@/components/AjtFrs'
 import { useSession } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 const page = () => {
-  const {data:session}=useSession()
-  if (!session) {
-    return <p>you are not logged in</p>;
+  const {data:session,status}=useSession()
+  useEffect(()=>{
+    if (status === 'loading') {
+      // Wait for the session status to resolve
+      return;
   }
+
+  if (!session) {
+      // Redirect to login if not authenticated
+      router.push('/login');
+      return;
+  }
+  },[])
   return (
     
     <AjtFrs/>

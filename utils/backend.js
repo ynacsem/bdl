@@ -24,6 +24,7 @@ export const factureEtat = (formData) => {
         // Iterate through each key-value pair in the object
         for (let key in obj) {
             if (obj[key] === null || obj[key] === '') {
+                console.log(`${key} is empty or null`); // Log the key name
                 return true; // Return true if any value is null or empty
             }
         }
@@ -47,3 +48,4 @@ export const factureEtat = (formData) => {
 
     return 1; // Return 1 if all fields are valid (not null or empty)
 };
+
