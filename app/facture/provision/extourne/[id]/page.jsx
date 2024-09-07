@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 import { handleEdit } from '@/utils/provision/handleEdit';
 import { handleModifier } from '@/utils/provision/handlePut';
 import { fetchFiles } from '@/utils/provision/fetchFiles';
+import { fetchBudgetDetails } from '@/utils/fetch';
 
 export default function Provision({params}) {
     const { data: session, status } = useSession();
@@ -131,7 +132,7 @@ const handleChange = async (e) => {
   };
   const handleExtourneTotal = (index) => {
     const newTableData = [...tableData];
-    newTableData[index].montantExtourner = newTableData[index].restInitiale; // Set to restInitiale
+    newTableData[index].montantExtourner = parseInt(newTableData[index].restInitiale) // Set to restInitiale
     newTableData[index].montantRestant = 0; // Set rest to 0
     setTableData(newTableData);
     setFormData({...formData, montant: calculateTotal(newTableData)});
@@ -279,6 +280,50 @@ const calculateTotal = (data) => {
     }
     return true; // If all montantRestant values are 0, return true
   };
+  const getStruDestID = async (stru_dest) => {
+    const table = 'structure';
+    const fields = 'IDstruct';
+    const filters = `libelle='${stru_dest}'`;
+    const query = new URLSearchParams({ table, fields, filters }).toString();
+    const url = `/api/getdata?${query}`;
+    try {
+      const response = await fetch(url);
+      const result = await response.json();
+      console.log(result)
+      console.log('hehe',result.results[0]?.IDstruct);
+      return result.results[0]?.IDstruct;
+    } catch (error) {
+  
+      console.error('Error fetching data:', error);
+    }
+  };
+  const [struDestID, setStruDestID] = useState('');
+  const getLigneID = async (ligne) => {
+    const table = 'lignbbudget';
+    const fields = 'IDlign';
+    const filters = `libelle='${ligne}'`;
+    const query = new URLSearchParams({ table, fields, filters }).toString();
+    const url = `/api/getdata?${query}`;
+    try {
+      const response = await fetch(url);
+      const result = await response.json();
+      console.log('id',result)
+      return result.results[0]?.IDlign;
+    } catch (error) {
+      console.error('Error fetching ligne id:', error);
+    }
+  };
+  useEffect(() => {
+    if (formData.stru_dest) {
+      console.log(formData.stru_dest)
+      getStruDestID(formData.stru_dest).then((id) => {
+        setStruDestID(id);
+      });
+      console.log(struDestID  )
+    }
+  
+  }, [formData.stru_dest]);
+  
   
 const handleExtourne = async (e) => {
     e.preventDefault();
@@ -317,7 +362,33 @@ const handleExtourne = async (e) => {
         }
     
     try {
+
         // Use Promise.all to update all lines concurrently
+        for (let i = 0; i < tableData.length; i++) {
+          const line = tableData[i];
+          const IDlin= await getLigneID(line.libelle)
+          const IDStru = await getStruDestID(formData.stru_dest)
+          const budget = await fetchBudgetDetails(IDlin,IDStru)
+          let mnt_prov= (parseInt(budget.mnt_prov) - parseInt(line.montantExtourner)).toString();
+          try {
+            const resp = await fetch('/api/updatedata', {
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                  table: 'ligndembudget',
+                  idField: 'IDligndem',
+                  id: budget.IDligndem,
+                  data: {
+                      mnt_prov,
+                  },
+              }),
+            })
+          } catch (error) {
+            console.log('Error submiting budget',error);
+          }
+        }
         await Promise.all(tableData.map(async (line) => {
           const dataToUpdate = {
             table: 'pro_ligne',

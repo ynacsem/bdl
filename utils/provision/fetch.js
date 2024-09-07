@@ -108,3 +108,61 @@ export const fetchLign = async (fil, isOp, isFilter) => {
       console.error('Error fetching libelle:', error);
     }
   };
+  export const fetchAllProvision1 = async (limit = 10, offset = 0, searchId = '', searchIntitule = '', selectedTypeFacture = '', extourneState = '', setTotalPages) => {
+   
+    const table = 'provision';
+    
+    // Construct filters based on provided search parameters
+    let filters = [];
+    if (searchId) {
+        filters.push(`id LIKE '%${searchId}%'`);
+    }
+    if (searchIntitule) {
+        filters.push(`intitule LIKE '%${searchIntitule}%'`);
+    }
+    if (selectedTypeFacture) {
+        filters.push(`type = ${selectedTypeFacture}`);
+    }
+    if (extourneState) {
+        filters.push(`extourne = ${extourneState}`);
+    }
+    // Join filters with AND
+    const filterString = filters.length ? filters.join(' AND ') : '';
+
+    // Construct the query parameters
+    const query = new URLSearchParams({
+        table,
+        filters: filterString,
+        offset,
+        order:'id'
+    }).toString();
+    
+    const url = `/api/getdatapage?${query}`;
+
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (setTotalPages) {
+            setTotalPages(Math.ceil(result.totalCount / limit));
+        }
+
+        // Check if results are present
+        if (!result.results || result.results.length === 0) {
+            console.warn('No provisions found.');
+            return [];
+        }
+
+        // Sanitize all entries in results
+        const sanitizedData = result.results.map(entry => 
+            Object.fromEntries(
+                Object.entries(entry).map(([key, value]) => [key, value === null ? '' : value])
+            )
+        );
+        console.log(sanitizedData);
+        return sanitizedData;
+    } catch (error) {
+        console.error('Error fetching all provisions:', error);
+        throw error;
+    }
+};

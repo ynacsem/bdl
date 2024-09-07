@@ -2,6 +2,8 @@
 import { signIn, useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import crypto from 'crypto';
+import Link from 'next/link';
 
 export default function LoginPage() {
     const { data: session } = useSession();
@@ -11,19 +13,26 @@ export default function LoginPage() {
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
+        console.log(hashPassword(password));
         e.preventDefault();
         const result = await signIn('credentials', {
             redirect: false,
             code_user,
-            password
+            password: hashPassword(password) // Hash the entered password
         });
+        
 
         if (result.error) {
             setError(result.error);
         } else {
-            router.push('/facture'); // Redirect to /facture
+            router.push(session?.user?.previleges?.admin ? '/manageusers' : '/facture'); // Redirect to /facture
         }
     };
+    const hashPassword = (password) => {
+        const secret = process.env.NEXT_PUBLIC_SECRET_KEY; // Ensure SECRET_KEY is in your .env file
+        return crypto.createHmac('sha256', secret).update(password).digest('hex');
+    };
+    
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-100">
@@ -81,7 +90,15 @@ export default function LoginPage() {
                             className="min-w-64 py-2 px-4 bg-purple-700 text-white rounded-md shadow-sm hover:bg-purple-600 focus:ring-2 focus:ring-indigo-600"
                         >
                             Logout
+
                         </button>
+                        <Link
+                            href={session?.user?.previleges?.admin ? '/manageusers' : '/facture'}
+                            className="min-w-64 py-2 px-4 bg-purple-700 text-white rounded-md shadow-sm hover:bg-purple-600 focus:ring-2 focus:ring-indigo-600"
+                        >
+                            home
+                            
+                        </Link>
                     </div>
                 )}
             </div>

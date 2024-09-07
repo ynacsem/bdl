@@ -31,7 +31,6 @@ const AcompteCard = ({ provision }) => {
   async function calc() { // Example ID
     try {
       let montant_restant = await calculateRest(id);
-      console.log('Montant restant:', montant_restant);
       setMontantRestant(montant_restant);
     } catch (error) {
       console.error('Error calculating montant restant:', error);
@@ -102,18 +101,25 @@ switch(etat) {
           VIEW
         </div>
       </Link>
-      <Link href={`/facture/provision/extourne/${id}`}>
+      {(extourne !== 1) &&(<Link href={`/facture/provision/extourne/${id}`}>
         <div className="mt-4 inline-block bg-yellow-300 text-white px-4 py-2 rounded hover:bg-secondary transition-colors">
           Extourne manuelle de provision
         </div>
-      </Link>
+      </Link>)}
       </>
 
       )}
-      {(session?.user?.previleges?.MODIFICATION_PROVISION||session?.user?.previleges?.admin) && (etat == 1 || etat === 3) && (
+      {(session?.user?.previleges?.MODIFICATION_PROVISION) && (etat == 1 || etat === 3) && (
         <Link href={`/facture/provision/${id}`}>
           <div className="mt-4 inline-block bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition-colors">
             Modify
+          </div>
+        </Link>
+      )}
+      {(session?.user?.previleges?.VALIDATION_PROVISION) && (etat == 1) && (
+        <Link href={`/facture/provision/${id}`}>
+          <div className="m-4 inline-block bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition-colors">
+            Valider
           </div>
         </Link>
       )}

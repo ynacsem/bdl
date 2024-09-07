@@ -60,18 +60,7 @@ export default function SaisieRemboursement({ formData, onChange,isReadOnly }) {
       <h1 className="text-2xl font-bold mb-4 text-purple-800">Saisie Remboursement</h1>
       <div className="space-y-4">
         <div className="space-y-2">
-          <div>
-            <label htmlFor="gestionnaire_bap" className="block text-gray-800 font-semibold mb-1">Gestionnaire BAP</label>
-            <input
-              type="text"
-              id="gestionnaire_bap"
-              name="gestionnaire_bap"
-              value={formData.gestionnaire_bap || ''}
-              onChange={handleChange}
-              className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
-              readOnly={isReadOnly}
-            />
-          </div>
+          
           <div>
             <label htmlFor="solde_a_encaisser" className="block text-gray-800 font-semibold mb-1">Solde à Encaisser</label>
             <input

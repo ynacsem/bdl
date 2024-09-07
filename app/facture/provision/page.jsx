@@ -1,25 +1,27 @@
 'use client';
-import { fetchAllProvision } from "@/utils/fetch"
-
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import ProvisionCard from "@/components/ProvisionCard";
-import { calculateRest } from "@/utils/provision/calculateRest"; 
+import { fetchAllProvision1 } from "@/utils/provision/fetch"; // Update this to include pagination and filters
+
 export default function Home() {
     const { data: session, status } = useSession();
     const router = useRouter();
+
     const [provisions, setProvisions] = useState([]);
     const [filteredProvisions, setFilteredProvisions] = useState([]);
     const [searchId, setSearchId] = useState('');
     const [searchIntitule, setSearchIntitule] = useState('');
-    const [selectedTypeFacture, setSelectedTypeFacture] = useState('');const [extourneState, setExtourneState] = useState('');
+    const [selectedTypeFacture, setSelectedTypeFacture] = useState('');
+    const [extourneState, setExtourneState] = useState('');
 
     const [error, setError] = useState(null);
-    const previleges = session?.user?.previleges;
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);  // Total number of pages
+    const limit = 10; // Number of provisions per page
 
     // Loading state to handle session check delay
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (status === 'loading') {
@@ -28,82 +30,70 @@ export default function Home() {
         }
 
         if (!session) {
-            // Redirect to login if not authenticated
             router.push('/login');
             return;
         }
+
         if (session?.user?.previleges?.admin) {
             router.push('/manageusers');
-            return
+            return;
         }
+        fetchData(); // Fetch data when the component mounts
+    }, [session, status, currentPage, searchId, searchIntitule, selectedTypeFacture, extourneState]); // Refetch data when filters or page changes
 
-        const fetchData = async () => {
-            try {
-                const data = await fetchAllProvision(); // Fetch without filters
-                console.log("Fetched Data:", data); // Log the fetched data
-                setProvisions(data);
-                console.log("Provisions:", provisions);
-                setFilteredProvisions(data);
-                console.log("Filtered Provisions:", filteredProvisions);
-
-            } catch (err) {
-                setError('Failed to fetch data');
-                console.error('Fetch Error:', err);
-            }
-            
-        };
-
-        fetchData();
-        setLoading(false); // Data fetching is complete
-    }, [session, status, router]); // Include status in dependencies
-
-    useEffect(() => {
-        console.log(provisions);
-        const lowercasedSearchId = searchId.toLowerCase();
-        const lowercasedSearchIntitule = searchIntitule.toLowerCase();
-        
-        if (Array.isArray(provisions)) {
-            console.log("Provisions:", provisions);
-            const filteredProvisions = provisions.filter(prov => 
-                (searchId === '' || prov.id.toString().includes(lowercasedSearchId)) &&
-                (searchIntitule === '' || prov.libelle.toLowerCase().includes(lowercasedSearchIntitule)) &&
-                (selectedTypeFacture === '' || prov.type === parseInt(selectedTypeFacture)) &&
-                (extourneState === '' || prov.extourne === parseInt(extourneState))
+    const fetchData = async () => {
+        try {
+            const limit = 10;  // Set default limit
+            // Pass filters and pagination params to fetch function
+            const data = await fetchAllProvision1(
+                limit,
+                (currentPage - 1) * limit,
+                searchId,
+                searchIntitule,
+                selectedTypeFacture,
+                extourneState,
+                setTotalPages
             );
-            filteredProvisions.reverse();
-            setFilteredProvisions(filteredProvisions);
+            setProvisions(data);
+            setFilteredProvisions(data); // Apply same data to filtered provisions initially
+        } catch (err) {
+            setError('Failed to fetch data');
+            console.error('Fetch Error:', err);
         }
-    }, [searchId, searchIntitule, selectedTypeFacture, extourneState, provisions]);
-    
-    
+    };
+
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+    };
 
     const handleIdChange = (event) => {
         setSearchId(event.target.value);
+        console.log(searchId)
+        setCurrentPage(1); // Reset to first page when search criteria change
     };
 
     const handleIntituleChange = (event) => {
         setSearchIntitule(event.target.value);
+        setCurrentPage(1);
     };
 
     const handleTypeFactureChange = (event) => {
         setSelectedTypeFacture(event.target.value);
+        setCurrentPage(1);
     };
+
     const handleExtourneChange = (event) => {
         setExtourneState(event.target.value);
+        setCurrentPage(1);
     };
-    
-    
-    if (loading) {
-        return <p>Loading...</p>; // Display loading indicator while waiting for session status
-    }
+
     
 
     return (
         <>
-            {/* <Nav /> */}
             <div className="p-4 overlay">
                 {error && <p className="text-red-500">{error}</p>}
-                
+
                 <h2 className="text-xl font-bold mb-4">Search</h2>
                 <div className="mb-4 w-full flex flex-wrap gap-2">
                     <input
@@ -111,23 +101,19 @@ export default function Home() {
                         placeholder="Search by ID"
                         value={searchId}
                         onChange={handleIdChange}
-                        onFocus={(e) => e.target.classList.add('border-primary')}
-                        onBlur={(e) => e.target.classList.remove('border-primary')}
-                        className="flex-grow p-2 border-4 rounded border-secondary focus:border-primary focus:outline-none  transition-colors duration-300"
+                        className="flex-grow p-2 border-4 rounded border-secondary"
                     />
                     <input
                         type="text"
                         placeholder="Search by Intitule"
                         value={searchIntitule}
                         onChange={handleIntituleChange}
-                        onFocus={(e) => e.target.classList.add('border-primary')}
-                        onBlur={(e) => e.target.classList.remove('border-primary')}
-                        className="flex-grow p-2 border-4 border-secondary focus:border-primary focus:outline-none rounded transition-colors duration-300"
+                        className="flex-grow p-2 border-4 rounded border-secondary"
                     />
                     <select
                         value={selectedTypeFacture}
                         onChange={handleTypeFactureChange}
-                        className="flex-grow p-2 border-4 border-secondary focus:border-primary focus:outline-none rounded transition-colors duration-300"
+                        className="flex-grow p-2 border-4 rounded border-secondary"
                     >
                         <option value="">Type de Provision</option>
                         <option value="1">Facture Fournisseur</option>
@@ -137,21 +123,40 @@ export default function Home() {
                     <select
                         value={extourneState}
                         onChange={handleExtourneChange}
-                        className="flex-grow p-2 border-4 border-secondary focus:border-primary focus:outline-none rounded transition-colors duration-300"
+                        className="flex-grow p-2 border-4 rounded border-secondary"
                     >
-                        <option value="" >Status d'Extourne</option>
+                        <option value="">Status d'Extourne</option>
                         <option value='1'>Extourner Totalement</option>
                         <option value='0'>Pas Extourner</option>
                     </select>
                 </div>
+
+                {/* Display provision cards */}
                 <div>
-                    {/* Map through filteredProvisions and render ProvisionCard components */}
                     {filteredProvisions.map((provision) => (
                         <ProvisionCard key={provision.id} provision={provision} />
                     ))}
                 </div>
+
+                {/* Pagination Controls */}
+                <div className="flex justify-center mt-4">
+                    <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="p-2 border-4 border-secondary rounded transition-colors duration-300 focus:outline-none focus:border-primary"
+                    >
+                        Previous
+                    </button>
+                    <span className="mx-2">{currentPage} / {totalPages}</span>
+                    <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="p-2 border-4 border-secondary rounded transition-colors duration-300 focus:outline-none focus:border-primary"
+                    >
+                        Next
+                    </button>
+                </div>
             </div>
         </>
     );
-    
 }

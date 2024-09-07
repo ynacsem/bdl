@@ -21,8 +21,8 @@ export default function SaisieFacture(props) {
     date: new Date().toISOString().split('T')[0],
     gest: session.user.username,
     observations: '',
-    type_facture: props.type, // New field
-    type_saisie:'', // New field
+    type_facture: '', // New field
+    type_saisie:props.type, // New field
     stru_ord: '', // New field
     stru_dest: '', // New field
     mod_reg: '', // New field
@@ -30,7 +30,8 @@ export default function SaisieFacture(props) {
     date_facture: '',
     rip:'0',
     num_cheq:'0',
-    etat:1
+    etat:1,
+    
   });
 
   const [tableData, setTableData] = useState([
@@ -38,7 +39,7 @@ export default function SaisieFacture(props) {
       codeOperation: '',
       libelle: '',
       compte: '',
-      TVA: '',
+      codeTVA: '',
       nature: '',
       montantUnitaireHT: 0,
       quantite: 0,
@@ -400,7 +401,7 @@ const handleFileDownload = (file) => {
         className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 `}
         
       >
-        <option value={0} disabled>Sélectionner un type</option>
+        <option value='' disabled>Sélectionner un type</option>
         <option value={1}>Facture Fournisseur</option>
         <option value={2}>Facture Salarié</option>
         <option value={3}>Facture Client</option>

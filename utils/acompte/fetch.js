@@ -1,3 +1,5 @@
+
+import { getData2 } from "@/utils/fetch";
 export const fetchAcompte = async (searchQuery) => {
     const fields = 'id,type_facture,id_fournisseur,stru_ord,stru_dest,libelle_acompte,date,numacmpt,montant,dateacmpt,gest,date_echeance,etat';
     const table = 'acompte';
@@ -101,6 +103,76 @@ export const fetchAcompteDetails = async (idAcompte) => {
         throw error; // Propagate error to caller
     }
 };
+export const fetchAllAcomptes1 = async (limit = 10, offset = 10,searchId = '', searchIntitule = '', selectedTypeFacture = '', setTotalPages) => {
+    const fields = 'id,type_facture,date,montant,gest,libelle_acompte,etat';
+    const table = 'acompte';
+    let filters = [];
+    if (searchId) {
+        filters.push(`id LIKE '%${searchId}%'`);
+    }
+    if (searchIntitule) {
+        filters.push(`libelle_acompte LIKE '%${searchIntitule}%'`);
+    }
+    if (selectedTypeFacture) {
+        filters.push(`type_facture = '${selectedTypeFacture}'`);
+    }  
+    
+    
+    const filterString = filters.length ? filters.join(' AND ') : '';
+    const query = new URLSearchParams({
+        fields,
+        table,
+        filters: filterString,
+        limit,
+        offset,
+        order:'id'
+    }).toString();
+    const url = `/api/getdatapage?${query}`;
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        console.log(result)
+        if (setTotalPages) {
+            setTotalPages(Math.ceil(result.totalCount / limit));
+        }
+        if (!result.results || result.results.length === 0) {
+            console.warn('No factures found.');
+            return [];
+        }
+        const isValidDate = (dateString) => {
+            const date = new Date(dateString);
+            return !isNaN(date.getTime());
+        };
+    
+        const addOneDay = (dateString) => {
+            if (!isValidDate(dateString) || dateString === '0000-00-00') {
+                return ''; // Return empty string for invalid or placeholder dates
+            }
+            const date = new Date(dateString);
+            date.setDate(date.getDate() + 1); // Add one day
+            return date.toISOString().split('T')[0]; // Return in 'yyyy-mm-dd' format
+        };
+    
+        const sanitizedData = result.results.map(entry => 
+            Object.fromEntries(
+                Object.entries(entry).map(([key, value]) => [key, value === null ? '' : value])
+            )
+        );
+        const formattedData = sanitizedData.map(data => ({
+            ...data,
+            date: addOneDay(data.date),
+            date_echeance: addOneDay(data.date_echeance),
+        }));
+    
+        return formattedData
+    } catch (error) {
+        console.error('Error fetching all acomptes:', error);
+        throw error;
+    }
+    // Formatting and sanitizing data
+    
+};
+
 export const fetchAllAcomptes = async () => {
     const field = 'id,type_facture,date,montant,gest,libelle_acompte,etat'
     const table = 'acompte'

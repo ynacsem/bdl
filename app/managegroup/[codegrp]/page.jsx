@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
-
-export default function ManagePrevileges() {
+export default function ModifyGrop({params}) {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [formData, setFormData] = useState({
         libelle: '',
         date_dval: '',
         date_fval: '',
+        VALIDATION_BAC : 0,
+        VALIDATION_BAP : 0,
+        VALIDATION_BAPT : 0,
         SAISIE_FACTURE: 0,
         MODIFICATION_FACTURE: 0,
         VALIDATION_ACOMPTE: 0,
@@ -20,9 +22,6 @@ export default function ManagePrevileges() {
         VALIDATION_PROVISION: 0,
         SAISIE_PROVISION: 0,
         MODIFICATION_PROVISION: 0,
-        VALIDATION_BAC: 0,
-        VALIDATION_BAP: 0,
-        VALIDATION_BAPT: 0,
     });
     const [errors, setErrors] = useState({});
 
@@ -30,9 +29,7 @@ export default function ManagePrevileges() {
         const newErrors = {};
         const today = new Date().toISOString().split('T')[0];
 
-        if (formData.date_dval < today) {
-            newErrors.date_dval = 'Date de début de validité must be today or later.';
-        }
+        
 
         if (formData.date_fval && formData.date_fval < formData.date_dval) {
             newErrors.date_fval = 'Date de fin de validité must not be before the start date.';
@@ -41,21 +38,20 @@ export default function ManagePrevileges() {
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
-   
-    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) return;
-        let {VALIDATION_ACOMPTE, SAISIE_ACOMPTE, MODIFICATION_ACOMPTE, VALIDATION_PROVISION, SAISIE_PROVISION, MODIFICATION_PROVISION,  SAISIE_FACTURE, 
-            MODIFICATION_FACTURE, VALIDATION_BAC, VALIDATION_BAP, VALIDATION_BAPT} = formData;
-        
+        let {VALIDATION_ACOMPTE, SAISIE_ACOMPTE, MODIFICATION_ACOMPTE, VALIDATION_PROVISION, SAISIE_PROVISION, MODIFICATION_PROVISION, VALIDATION_FACTURE, SAISIE_FACTURE, 
+            MODIFICATION_FACTURE, IDprev,VALIDATION_BAC, VALIDATION_BAP, VALIDATION_BAPT} = formData;
         try {
-            const response = await fetch('/api/postdata', {
-                method: 'POST',
+            const response = await fetch('/api/updatedata', {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     table: 'previlege',
+                    idField : 'IDprev',
+                    id: IDprev,
                     data: {
                         VALIDATION_ACOMPTE,
                         SAISIE_ACOMPTE,
@@ -63,6 +59,7 @@ export default function ManagePrevileges() {
                         VALIDATION_PROVISION,
                         SAISIE_PROVISION,
                         MODIFICATION_PROVISION,
+                        VALIDATION_FACTURE,
                         SAISIE_FACTURE,
                         MODIFICATION_FACTURE,
                         VALIDATION_BAC,
@@ -77,30 +74,34 @@ export default function ManagePrevileges() {
             throw new Error(result.error || 'Something went wrong');
         }
 
-        alert(`PREV ID: ${result.id}`);
-        const IDprev_fk = result.id;
         try {
-            let { libelle, date_dval, date_fval } = formData;
-
+            let { libelle, date_dval, date_fval, IDprev_fk,is_actif } = formData;
             
-            const today = new Date().toISOString().split('T')[0];
-            let is_actif = date_dval <= today ? 1 : 0;
-            const response = await fetch('/api/postdata', {
-                method: 'POST',
+        
+            
+            const response = await fetch('/api/updatedata', {
+                
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 
                 body: JSON.stringify({
+                    idField: 'codegrp',
+                    id: params.codegrp,
                     table: 'groupe',
                     data:{
                         libelle,
                         date_dval,
                         date_fval,
                         IDprev_fk,
-                        is_actif
+                        is_actif 
                     }
                     
                 })})
-                router.push('/manageusers');
+                
+                   
+                    
+                
+                router.push('/managegroup');
         } catch (error) {
             console.log(error);
         }
@@ -109,6 +110,44 @@ export default function ManagePrevileges() {
             console.error('Error creating previleges:', error);
         }
     };
+    useEffect(() => {
+        const addOneDay = (dateString) => {
+            if (!isValidDate(dateString) || dateString === '0000-00-00') {
+                return ''; // Return empty string for invalid or placeholder dates
+            }
+
+            const date = new Date(dateString);
+            date.setDate(date.getDate() + 1); // Add one day
+            return date.toISOString().split('T')[0]; // Return in 'yyyy-mm-dd' format
+        };
+        const isValidDate = (dateString) => {
+            const date = new Date(dateString);
+            return !isNaN(date.getTime());
+        };
+
+        const fetchData = async () => {
+            try {
+                const fields = 'g.libelle,g.date_dval,g.date_fval,g.is_actif,g.IDprev_fk,p.IDprev,p.VALIDATION_ACOMPTE,p.SAISIE_ACOMPTE,p.MODIFICATION_ACOMPTE,p.VALIDATION_PROVISION,p.SAISIE_PROVISION,p.MODIFICATION_PROVISION,p.VALIDATION_BAC,p.VALIDATION_BAP,p.VALIDATION_BAPT,p.SAISIE_FACTURE,p.MODIFICATION_FACTURE';
+                const table = 'groupe g';
+                const filters = `codegrp = '${params.codegrp}'`;
+                const joins = 'INNER JOIN `previlege` p ON p.IDprev = g.IDprev_fk';
+                const query = new URLSearchParams({ fields, table, filters,joins }).toString();
+                const url = `/api/getdata?${query}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                setFormData(data.results[0]);
+                setFormData((prevData) => ({
+                    ...prevData,
+                    date_dval: prevData.date_dval ? addOneDay(prevData.date_dval) : '',
+                    date_fval: prevData.date_fval ? addOneDay(prevData.date_fval) : '',
+                }));
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+        fetchData()
+    }, [params.codegrp]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -120,11 +159,8 @@ export default function ManagePrevileges() {
 
     return (
         <div className="bg-gray-100 min-h-screen flex items-center justify-center">
-            <div 
-                className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mt-6 overflow-y-auto" 
-                style={{ maxHeight: '90vh' }}
-            >
-                <h1 className="text-2xl font-bold text-center text-secondary mb-4">Créer un groupe</h1>
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mt-6 overflow-y-auto" style={{ maxHeight: '90vh' }}>
+                <h1 className="text-2xl font-bold text-center text-secondary mb-4">Modifier un groupe</h1>
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Libelle and Dates */}
                     <div>
@@ -297,9 +333,20 @@ export default function ManagePrevileges() {
                             </div>
                         </div>
                     </div>
+                    
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            name="is_actif"
+                            checked={formData.is_actif === 1}
+                            onChange={handleChange}
+                            className="h-5 w-5 text-secondary border-gray-300 rounded focus:ring-secondary text-center"
+                        />
+                        <label htmlFor="is_actif" className="text-lg font-medium text-gray-900">Actif</label>
+                    </div>
     
                     {/* Submit Button */}
-                    <div className="flex justify-end">
+                    <div className="flex justify-center">
                         <button
                             type="submit"
                             className="px-4 py-2 bg-secondary text-white rounded-md hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50"
@@ -311,6 +358,5 @@ export default function ManagePrevileges() {
             </div>
         </div>
     );
-    
     
 }

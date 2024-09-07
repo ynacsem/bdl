@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'
-import { fetchLign } from '@/utils/fetch';
+import { fetchBudgetDetails, fetchLign } from '@/utils/fetch';
 import {uploadFiles} from '@/utils/fileupload';
 import { useSession } from 'next-auth/react';
 import { handleEdit } from '@/utils/provision/handleEdit';
@@ -53,6 +53,15 @@ export default function Provision({params}) {
       // Redirect to login if not authenticated
       router.push('/login');
       return;
+  }else{
+    if(session){
+      if (
+        session?.user?.previlege?.VALIDATION_PROVISION == 0 && 
+        session?.user?.previlege?.MODIFICATION_PROVISION == 0 
+    ) {
+      router.push('/facture')
+    }
+    }
   }
   },[])
 
@@ -77,7 +86,7 @@ useEffect(() => {
     handleEdit(params.id, setFormData, setTableData);
 },[params.id])
 useEffect(() => {
-  if (formData.etat === 2) {
+  if (formData.etat === 2 || session?.user?.previleges?.MODIFICATION_PROVISION !== 1) {
     setIsReadonly(true);
   }
 },[formData])
@@ -104,6 +113,49 @@ useEffect(() => {
     });
   }
 }, [isReadOnly, formData]);
+const getStruDestID = async (stru_dest) => {
+  const table = 'structure';
+  const fields = 'IDstruct';
+  const filters = `libelle='${stru_dest}'`;
+  const query = new URLSearchParams({ table, fields, filters }).toString();
+  const url = `/api/getdata?${query}`;
+  try {
+    const response = await fetch(url);
+    const result = await response.json();
+    console.log(result)
+    console.log('hehe',result.results[0]?.IDstruct);
+    return result.results[0]?.IDstruct;
+  } catch (error) {
+
+    console.error('Error fetching data:', error);
+  }
+};
+const [struDestID, setStruDestID] = useState('');
+const getLigneID = async (ligne) => {
+  const table = 'lignbbudget';
+  const fields = 'IDlign';
+  const filters = `libelle='${ligne}'`;
+  const query = new URLSearchParams({ table, fields, filters }).toString();
+  const url = `/api/getdata?${query}`;
+  try {
+    const response = await fetch(url);
+    const result = await response.json();
+    console.log('id',result)
+    return result.results[0]?.IDlign;
+  } catch (error) {
+    console.error('Error fetching ligne id:', error);
+  }
+};
+useEffect(() => {
+  if (formData.stru_dest) {
+    console.log(formData.stru_dest)
+    getStruDestID(formData.stru_dest).then((id) => {
+      setStruDestID(id);
+    });
+    console.log(struDestID  )
+  }
+
+}, [formData.stru_dest]);
 
 useEffect(() => {
   if (status === 'authenticated') {
@@ -302,8 +354,64 @@ const handleFileSelect = (e) => {
 },[params.id])
 const handleSubmit = async (e,validate) => {
   validate = validate || false
+  let isValid = true
   if (validate){
-    await handleModifier(e, formData, params.id, tableData, setFormError, router,true);
+    for (let i=0;i<tableData.length;i++){
+      const line = tableData[i];
+      const IDlin= await getLigneID(line.libelle)
+      const IDStru = await getStruDestID(formData.stru_dest)
+      const budget = await fetchBudgetDetails(IDlin,IDStru)
+      if (!budget || budget.length === 0) {
+        alert(`La structure ${formData.stru_dest} n'a pas de demande pour la ligne ${line.libelle}`);
+        isValid = false;
+        break; // Stop the loop but don't exit the function
+      }
+      let mnt_tot = line.montantTotal;
+      for (let j=i+1;j<tableData.length;j++){
+        if(tableData[j].libelle === line.libelle){
+          mnt_tot += tableData[j].montantTotal;
+        }
+      }
+      const remainingBudget = (
+        parseInt(budget.mnt_budg) - 
+        parseInt(budget.mnt_eng) - 
+        parseInt(budget.mnt_real) -
+        parseInt(budget.mnt_prov)
+      ).toFixed(2);
+      if (parseInt(remainingBudget) < parseInt(mnt_tot)) {
+        alert(`Le montant restant dans cette demande entre la structure ${formData.stru_dest} et la ligne ${line.libelle} est insuffisant pour couvrir le montant demandé.`);
+        isValid = false;
+        break; // Stop the loop but don't exit the function
+      }else{
+        console.log(remainingBudget, mnt_tot)
+        const mnt_prov = ((parseInt(budget.mnt_prov) + parseInt(mnt_tot)).toFixed(2)).toString();
+        try {
+          const resp = await fetch('/api/updatedata', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                table: 'ligndembudget',
+                idField: 'IDligndem',
+                id: budget.IDligndem,
+                data: {
+                    mnt_prov,
+                },
+            }),
+        });
+        const res = await resp.json();
+        if (!resp.ok) {
+          throw new Error(res.message || 'Failed to update data.');
+        }
+        } catch (error) {
+          console.log('Error submiting budget',error);
+        }
+      }
+    }
+    if (isValid) {
+      await handleModifier(e, formData, params.id, tableData, setFormError, router,true);
+    }
   }else{
     await handleModifier(e, formData, params.id, tableData, setFormError, router);
   }
@@ -752,6 +860,7 @@ const handleValidation = async (e) => {
                     type="button"
                     onClick={() => handleDeleteRow(index)}
                     disabled={isReadOnly}
+                    hidden={isReadOnly}
                     className="bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600"
                   >
                     Supprimer

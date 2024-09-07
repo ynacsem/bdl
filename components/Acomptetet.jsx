@@ -135,7 +135,7 @@ export default function SaisieAcompte({ formData, onChange, files, handleFileSel
             >
               <option value="" disabled>Sélectionner un type</option>
               <option value={1}>Fournisseur</option>
-              <option value={2}>Client</option>
+              <option value={3}>Client</option>
             </select>
           </div>
           <div>

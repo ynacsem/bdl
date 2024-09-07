@@ -20,6 +20,7 @@ export default function Provision() {
   const [suppliers, setSuppliers] = useState([]);
   const [struct, setStruct] = useState([]);
   const [lib,setLib] = useState([])
+  const today = new Date().toISOString().split('T')[0]; 
   const [formData, setFormData] = useState({
     intitule: '',
     id_fournisseur: '',
@@ -201,7 +202,7 @@ const calculateTotal = (data) => {
 
   const onSubmit = async (e) => {//to be changed
     e.preventDefault(); // Prevent form submission
-
+    
     
         // If no file is being uploaded, just submit the form
     let provisionId = await handleSubmit(e, formData, tableData, router, setFormError);
@@ -458,6 +459,8 @@ const handleFileSelect = (e) => {
       name="date_pro"
       value={formData.date_pro}
       onChange={handleChange}
+      max={today}
+      
       className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     />
   </div>
@@ -468,8 +471,8 @@ const handleFileSelect = (e) => {
       id="date_extourne"
       name="date_extourne"
       value={formData.date_extourne}
+      min={today}
       onChange={handleChange}
-      min={formData.date_pro}
       className="w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800"
     />
   </div>

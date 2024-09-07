@@ -19,7 +19,7 @@ export default function Acompte() {
     // Initial state for SaisieAcompte
   });
   let [formDataRemboursement, setFormDataRemboursement] = useState({
-    gestionnaire_bap: '',
+    gestionnaire_bap: session?.user.username,
     solde_a_encaisser: '',
     date_valuer: '',
     date_forcage_remboursement: '',
@@ -106,12 +106,10 @@ export default function Acompte() {
       let convertedFormDataAcompte = {
         type_facture: parseInt(formDataAcompte.type_facture,10), // Convert to integer
         id_fournisseur: parseInt(formDataAcompte.id_fournisseur, 10)||1, // Convert to integer
-        id_fact: parseInt(formDataAcompte.id_fact, 10), // Convert to integer
         stru_ord: formDataAcompte.stru_ord,
         stru_dest: formDataAcompte.stru_dest,
         libelle_acompte: formDataAcompte.libelle_acompte,
-        date: new Date().toISOString().split('T')[0], // Ensure date is in YYYY-MM-DD format
-        numacmpt: formDataAcompte.numacmpt||0,
+        date: new Date().toISOString().split('T')[0],
         montant: montant1, // Convert to decimal
         dateacmpt: formDataAcompte.dateacmpt, // Ensure date is in YYYY-MM-DD format
         gest: session?.user.username,
@@ -121,7 +119,7 @@ export default function Acompte() {
          etat:1// Ensure date is in YYYY-MM-DD format
       };
       let convertedFormDataRemboursement = { // Use the ID from the acompte submission
-        gestionnaire_bap: formDataRemboursement.gestionnaire_bap,
+        gestionnaire_bap: session?.user.username,
         solde_a_encaisser: formDataRemboursement.solde_a_encaisser,
          // Ensure date is in YYYY-MM-DD format
         date_valuer: formDataRemboursement.date_valuer, // Ensure date is in YYYY-MM-DD format
@@ -142,6 +140,7 @@ export default function Acompte() {
     } 
     convertedFormDataAcompte.etat = etat1;
       console.log(convertedFormDataAcompte)
+      console.log(convertedFormDataRemboursement)
       
       // Submit SaisieAcompte form
       let acompteId = await handleAcompteSubmit(convertedFormDataAcompte);
@@ -165,7 +164,7 @@ export default function Acompte() {
       // Convert formDataRemboursement according to its schema (similar to `formDataAcompte`)
       let convertedFormDataRemboursement1 = {
         id_acompte: acompteId, // Use the ID from the acompte submission
-        gestionnaire_bap: formDataRemboursement.gestionnaire_bap,
+        gestionnaire_bap: session?.user.username,
         solde_a_encaisser: formDataRemboursement.solde_a_encaisser,
          // Ensure date is in YYYY-MM-DD format
         date_valuer: formDataRemboursement.date_valuer, // Ensure date is in YYYY-MM-DD format

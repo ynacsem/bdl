@@ -5,6 +5,7 @@ export const handleSubmit = async (e, formData, tableData, router, setFormError)
     let { intitule, id_fournisseur, reference_facture, date, gest, observations, type_facture, type_saisie, stru_ord, stru_dest, mod_reg, montant, date_facture,rip,
         num_cheq, etat } = formData;
     let id_facture
+    etat = 1
     const state = factureEtat(formData);
     const state2 = factureEtat(tableData)
     if (state === 3 || state2 === 3) {

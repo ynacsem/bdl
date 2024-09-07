@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 
 export default function CreateUser({ params }) {
     const { data: session, status } = useSession();
+    const [structures, setStructures] = useState([]); 
     const router = useRouter();
     const [formData, setFormData] = useState({
         code_user: '',
@@ -17,7 +18,7 @@ export default function CreateUser({ params }) {
         date_dval: '',
         date_fval: '',
         codegrp_fk: '',
-        is_actif: 1
+        is_actif: 1,
     });
     const [groups, setGroups] = useState([]);
     const [errors, setErrors] = useState({});
@@ -47,7 +48,7 @@ export default function CreateUser({ params }) {
 
         const fetchData = async () => {
             try {
-                const fields = 'code_user,nom,prenom,date_naissance,email,date_fval,date_dval,is_actif,codegrp_fk';
+                const fields = 'code_user,nom,prenom,date_naissance,email,date_fval,date_dval,is_actif,codegrp_fk,ID_struct_fk';
                 const table = 'user';
                 const filters = `code_user = '${params.code_user}'`;
                 const query = new URLSearchParams({ fields, table, filters }).toString();
@@ -57,9 +58,9 @@ export default function CreateUser({ params }) {
                 setFormData(data.results[0]);
                 setFormData((prevData) => ({
                     ...prevData,
-                    date_dval: prevData.date_dval ? addOneDay(prevData.date_dval) : '',
-                    date_fval: prevData.date_fval ? addOneDay(prevData.date_fval) : '',
-                    date_naissance: prevData.date_naissance ? addOneDay(prevData.date_naissance) : '',
+                    date_dval: prevData?.date_dval ? addOneDay(prevData.date_dval) : '',
+                    date_fval: prevData?.date_fval ? addOneDay(prevData.date_fval) : '',
+                    date_naissance: prevData?.date_naissance ? addOneDay(prevData.date_naissance) : '',
                 }));
 
             } catch (error) {
@@ -80,9 +81,23 @@ export default function CreateUser({ params }) {
                 console.error('Error fetching groups:', error);
             }
         };
+        const fetchStructures = async () => {
+            try {
+                const fields = 'libelle,IDstruct';
+                const table = 'structure';
+                const query = new URLSearchParams({ fields, table }).toString();
+                const url = `/api/getdata?${query}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                setStructures(data.results);
+            } catch (error) {
+                console.error('Error fetching structures:', error);
+            }
+        };
 
         fetchData();
         fetchGroups();
+        fetchStructures()
     }, [params.code_user]);
 
     const validateForm = () => {
@@ -102,6 +117,7 @@ export default function CreateUser({ params }) {
         e.preventDefault();
 
         if (!validateForm()) return;
+        
         console.log(formData);
         try {
             await fetch('/api/updatedata', {
@@ -130,7 +146,10 @@ export default function CreateUser({ params }) {
 
     return (
         <div className="bg-gray-100 min-h-screen flex items-center justify-center">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl" style={{ maxHeight: '90vh' }}>
+            <div 
+                className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl overflow-y-auto" 
+                style={{ maxHeight: '90vh' }}
+            >
                 <h1 className="text-2xl font-bold text-center text-secondary mb-4">Modifier un utilisateur</h1>
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
@@ -246,6 +265,23 @@ export default function CreateUser({ params }) {
                         />
                         <label htmlFor="is_actif" className="text-lg font-medium text-gray-900">Actif</label>
                     </div>
+                    <div>
+                        <label htmlFor="ID_struct_fk" className="block text-lg font-medium text-gray-900">Structure</label>
+                        <select
+                            name="ID_struct_fk"
+                            value={formData.ID_struct_fk}
+                            onChange={handleChange}
+                            required
+                            className="mt-2 block w-full px-3 py-2 border rounded-md shadow-sm text-base focus:ring-2 focus:ring-secondary"
+                        >
+                            <option value="">Select a structure</option>
+                            {structures.map((structure) => (
+                                <option key={structure.IDstruct} value={structure.IDstruct}>
+                                    {structure.libelle}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     <button type="submit" className="block mx-auto mt-6 bg-primary text-white py-2 px-6 rounded text-base">
                         Modifier
                     </button>
@@ -253,4 +289,5 @@ export default function CreateUser({ params }) {
             </div>
         </div>
     );
+    
 }

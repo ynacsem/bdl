@@ -5,6 +5,7 @@ import './globals.css';
 
 import NextAuthSessionProvider from "./nextauth/NextAuthSessionProvider";
 import Nav from "../components/nav";
+import AuthLayout from "./nextauth/AuthLayout";
 
 
 const montserrat = Montserrat({ subsets: ['latin'] });
@@ -19,8 +20,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={montserrat.className}>
         <NextAuthSessionProvider>
+          <AuthLayout>
           <Nav/>
           {children}
+          </AuthLayout>
         </NextAuthSessionProvider>
       </body>
     </html>

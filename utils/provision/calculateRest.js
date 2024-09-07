@@ -9,8 +9,6 @@ export const calculateRest = async (filter) => {
         const response = await fetch(url);
         const result = await response.json();
 
-        console.log('API result:', result); // Log the result to inspect its format
-
         // Access the results array within the result object
         const data = result.results;
 

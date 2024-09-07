@@ -25,42 +25,42 @@ const Page = () => {
   const renderComponent = () => {
     switch (selectedType) {
       case 'facture':
-        if (!previleges.SAISIE_FACTURE && !previleges.admin) {
+        if (!previleges.SAISIE_FACTURE ) {
           alert('Vous n’avez pas le privilège requis pour saisir une facture.');
           setSelectedType('');
           return null;
         }
         return <Facture type={1} />;
       case 'facture non comptable':
-        if (!previleges.SAISIE_FACTURE && !previleges.admin) {
+        if (!previleges.SAISIE_FACTURE ) {
           alert('Vous n’avez pas le privilège requis pour saisir une facture.');
           setSelectedType('');
           return null;
         }
         return <Facture type={2} />;
       case 'acompte':
-        if (!previleges.SAISIE_ACOMPTE && !previleges.admin) {  // Assuming SAISIE_ACOMPTE is the privilege required for acompte
+        if (!previleges.SAISIE_ACOMPTE ) {  // Assuming SAISIE_ACOMPTE is the privilege required for acompte
           alert('Vous n’avez pas le privilège requis pour saisir un acompte.');
           setSelectedType('');
           return null;
         }
         return <Acompte />;
       case 'avoir':
-        if (!previleges.SAISIE_FACTURE && !previleges.admin) {  // Assuming SAISIE_AVOIR is the privilege required for avoir
+        if (!previleges.SAISIE_FACTURE ) {  // Assuming SAISIE_AVOIR is the privilege required for avoir
           alert('Vous n’avez pas le privilège requis pour saisir un avoir.');
           setSelectedType('');
           return null;
         }
         return <Facture type={4} />;
       case 'avoir non comptable':
-        if (!previleges.SAISIE_FACTURE && !previleges.admin) {  // Assuming SAISIE_AVOIR is the privilege required for avoir non comptable
+        if (!previleges.SAISIE_FACTURE ) {  // Assuming SAISIE_AVOIR is the privilege required for avoir non comptable
           alert('Vous n’avez pas le privilège requis pour saisir un avoir non comptable.');
           setSelectedType('');
           return null;
         }
         return <Facture type={5} />;
       case 'provision':
-        if (!previleges.SAISIE_PROVISION && !previleges.admin) {  // Assuming SAISIE_PROVISION is the privilege required for provision
+        if (!previleges.SAISIE_PROVISION ) {  // Assuming SAISIE_PROVISION is the privilege required for provision
           alert('Vous n’avez pas le privilège requis pour saisir une provision.');
           setSelectedType('');
           return null;

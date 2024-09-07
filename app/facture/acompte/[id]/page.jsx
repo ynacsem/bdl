@@ -38,6 +38,14 @@ export default function Acompte({params}) {
   useEffect(() => {
     if (status === 'authenticated') {
       setPrevileges(session?.user?.previleges || {});
+      if(session){
+        if (
+          session?.user?.previlege?.VALIDATION_ACOMPTE == 0 && 
+          session?.user?.previlege?.MODIFICATION_ACOMPTE == 0 
+      ) {
+        router.push('/facture')
+      }
+      }
     }
   }, [status, session])
   useEffect(()=>{
@@ -69,8 +77,7 @@ export default function Acompte({params}) {
         stru_ord: formDataAcompte.stru_ord,
         stru_dest: formDataAcompte.stru_dest,
         libelle_acompte: formDataAcompte.libelle_acompte,
-        date: new Date().toISOString().split('T')[0], // Ensure date is in YYYY-MM-DD format
-        numacmpt: formDataAcompte.numacmpt||0,
+        date: new Date().toISOString().split('T')[0],
         montant: montant1, // Convert to decimal
         dateacmpt: formDataAcompte.dateacmpt, // Ensure date is in YYYY-MM-DD format
         gest: session?.user.username,
@@ -91,7 +98,7 @@ export default function Acompte({params}) {
       const convertedFormDataRemboursement = {
         id : idRemboursement,
         id_acompte: parseInt(acompteId,10), // Use the ID from the acompte submission
-        gestionnaire_bap: formDataRemboursement.gestionnaire_bap,
+        gestionnaire_bap: session?.user?.username,
         solde_a_encaisser: formDataRemboursement.solde_a_encaisser,
          // Ensure date is in YYYY-MM-DD format
         date_valuer: formDataRemboursement.date_valuer, // Ensure date is in YYYY-MM-DD format
@@ -136,7 +143,7 @@ export default function Acompte({params}) {
 
 },[params.id])
 useEffect(() => {
-  if (formDataAcompte.etat === 2) {
+  if (formDataAcompte.etat === 2 ||session?.user?.previleges?.MODIFICATION_ACOMPTE!==1 ) {
     setIsReadonly(true);
   }
 },[formDataAcompte])

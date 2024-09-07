@@ -10,6 +10,7 @@ import { fetchFiles } from '@/utils/fetchFiles';
 
 import { useSession } from 'next-auth/react';
 import {uploadFiles} from '@/utils/fileupload';
+import { fetchBudgetDetails } from '@/utils/fetch';
 export default function ModifierFacture({params}) {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function ModifierFacture({params}) {
   const [struct, setStruct] = useState([]);
   const [previleges, setPrevileges] = useState(null);
   const [isReadOnly,setIsReadonly] = useState(false);
-  
+  const [struDestID, setStruDestID] = useState(null);
   
   const [formData, setFormData] = useState({
     intitule: '',
@@ -37,7 +38,11 @@ export default function ModifierFacture({params}) {
     montant: '', // New field
     date_facture: '',
     rip:'',
-    num_cheq:'' 
+    num_cheq:'',
+    BAC :0,
+    BAP :0,
+    BAPT :0
+
      // New field for current date
   });
 
@@ -57,7 +62,8 @@ export default function ModifierFacture({params}) {
   const [formError, setFormError] = useState('');
   const [tableError, setTableError] = useState('');
 
-  const handleChange = (e) => {
+  const handleChange = async(e) => {
+    
     const { name, value, type, files } = e.target;
 
     if (type === 'file') {
@@ -74,16 +80,16 @@ export default function ModifierFacture({params}) {
     // Select all input elements and set their className to 'bg-gray-400'
     if (isReadOnly) {
       document.querySelectorAll('input').forEach(input => {
-        input.classList.add('bg-gray-400');
+        input.classList.add('bg-gray-300');
         input.classList.remove('bg-white');
     });
     document.querySelectorAll('select').forEach(input => {
-      input.classList.add('bg-gray-400');
+      input.classList.add('bg-gray-300');
       input.classList.remove('bg-white');
   })
   
    document.querySelectorAll('textarea').forEach(input => {
-    input.classList.add('bg-gray-400');
+    input.classList.add('bg-gray-300');
     input.classList.remove('bg-white');
    })
   
@@ -105,17 +111,14 @@ export default function ModifierFacture({params}) {
       const data = await fetchLign(value,false,true);
       
       const newData = data.results[0];
-      console.log(newData)
       newTableData[index] = {...newTableData[index], codeOperation: newData.cod_op,  nature: newData.type,compte:newData.compte};
     }
-    console.log(newTableData)
      setTableData(newTableData);
      setFormData({...formData,montant:calculateTotal(newTableData)})
    };
   
 
   const handleAddRow = () => {
-    console.log(tableData)
     // Update tableData state and calculate the new total amount
     setTableData(prevTableData => {
       // Create the new table data with the added row
@@ -138,7 +141,6 @@ export default function ModifierFacture({params}) {
         ...prevFormData,
         montant: calculateTotal(newTableData) // Calculate total based on the new data
       }));
-      console.log(formData.montant)
   
       return newTableData;
     });
@@ -210,12 +212,10 @@ export default function ModifierFacture({params}) {
       });
     
       // Log updated form data
-      console.log("FormData after state update:", formData);
     
       // Check if state has updated
-      
+      //here we work on our budget thing 
         await handleSubmit(e,true);
-        router.push("/facture");
         // Proceed with form submission logic
         // router.push('/facture'); // Uncomment this line if navigation is needed
       
@@ -227,23 +227,105 @@ export default function ModifierFacture({params}) {
   
   
 
-  const handleSubmit = async (e,validate) => {
-    validate = validate || false
-    if (validate){
-      await handleModifier(e, formData, params.id, tableData, setFormError, router,true);
-    }else{
-      await handleModifier(e, formData, params.id, tableData, setFormError, router);
+  const handleSubmit = async (e, validate) => {
+    validate = validate || false;
+    
+    let isValid = true; // Flag to track if validation passes
+  
+    if (validate) {
+      if (validerText === 'Valider BAC') {
+        // Loop through all lines of the table
+        for (let i=0 ; i < tableData.length; i++) {
+          // Get the IDs based on the current line's libelle and formData's stru_dest
+          const line = tableData[i];
+          const IDlin = await getLigneID(line.libelle);
+          const IDStru = await getStruDestID(formData.stru_dest);
+          console.log('id structure', IDStru);
+          
+          // Fetch budget details for the current IDlin and IDStru
+          const budget = await fetchBudgetDetails(IDlin, IDStru);
+          
+          // Check if the budget details were not found
+          if (!budget || budget.length === 0) {
+            alert(`La structure ${formData.stru_dest} n'a pas de demande pour la ligne ${line.libelle}`);
+            isValid = false;
+            break; // Stop the loop but don't exit the function
+          }
+          let mnt_tot = line.montantTotal;
+          for (let j=i+1; j < tableData.length; j++) {
+              if(tableData[j].libelle === line.libelle){
+                mnt_tot += tableData[j].montantTotal;
+              }
+          }
+      
+          // Calculate the remaining budget after considering the current form data
+          const remainingBudget = (
+            parseInt(budget.mnt_budg) - 
+            parseInt(budget.mnt_eng) - 
+            parseInt(budget.mnt_real)-
+            parseInt(budget.mnt_prov)
+          ).toFixed(2);
+
+      
+          // If the remaining budget is less than the requested amount, alert and stop the process
+          if (parseInt(remainingBudget) < parseInt(mnt_tot)) {
+            alert(`Le montant restant dans cette demande entre la structure ${formData.stru_dest} et la ligne ${line.libelle} est insuffisant pour couvrir le montant demandé.`);
+            isValid = false;
+            break; // Stop the loop but don't exit the function
+          }
+        }
+      }else{
+        if (validerText === 'Valider BAPT') {
+          for (const line of tableData) {
+            const IDlin = await getLigneID(line.libelle);
+            const IDStru = await getStruDestID(formData.stru_dest);
+            const budget = await fetchBudgetDetails(IDlin, IDStru);//budget ='mnt_budg,mnt_eng,mnt_real,IDligndem'
+            const mnt_real = ((parseInt(budget.mnt_real) + parseInt(line.montantTotal)).toFixed(2)).toString();
+          try {
+            const resp = await fetch('/api/updatedata', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    table: 'ligndembudget',
+                    idField: 'IDligndem',
+                    id: budget.IDligndem,
+                    data: {
+                        mnt_real,
+                    },
+                }),
+            });
+
+            const res = await resp.json();
+
+            if (!resp.ok) {
+                throw new Error(res.error || 'Something went wrong');
+            }
+        } catch (error) {
+            console.error('Error submitting budget data:', error);
+        }
+          }
+        }
+      }
+  
+      // If validation failed, stop further processing
+      if (!isValid) {
+        return; // Exit the function to prevent further processing
+      }
+      
+      await handleModifier(e, formData, params.id, tableData, setFormError, router, true, validerText);
+    } else {
+      await handleModifier(e, formData, params.id, tableData, setFormError, router, false, validerText);
     }
   
-  const filesWithoutId = files.filter(file => !file.id); // Filter out files that do have an id
-  if (filesWithoutId.length > 0) {
-    console.log(filesWithoutId);
-    const apiUrl = 'http://localhost:3000/api/uploadfile';
-      console.log(filesWithoutId)
-      await uploadFiles(apiUrl, params.id, null,null, filesWithoutId);
-  }
+    const filesWithoutId = files.filter(file => !file.id); // Filter out files that do have an id
+    if (filesWithoutId.length > 0) {
+      const apiUrl = 'http://localhost:3000/api/uploadfile';
+      await uploadFiles(apiUrl, params.id, null, null, filesWithoutId);
+    }
+  };
   
-  }
       
   
   
@@ -287,15 +369,119 @@ export default function ModifierFacture({params}) {
 useEffect(() => {
      setSearchQuery(params.id);
     handleEdit(params.id, setFormData, setTableData);
+   
+    
+  
 
 
 
-},[params.id])
+},[params.id,session])
 useEffect(() => {
-  if (formData.etat === 2) {
+  if(session){
+    if (
+      session?.user?.previlege?.VALIDATION_FACTURE == 0 && 
+      session?.user?.previlege?.MODIFICATION_FACTURE == 0 && 
+      session?.user?.previlege?.VALIDATION_BAC == 0 && 
+      session?.user?.previlege?.VALIDATION_BAP == 0 && 
+      session?.user?.previlege?.VALIDATION_BAPT == 0
+  ) {
+    router.push('/facture')
+  }
+  }
+  
+
+  if (formData.etat === 2 || session?.user?.previleges?.MODIFICATION_FACTURE === 0 || formData.BAC === 1) {
     setIsReadonly(true);
   }
-},[formData])
+
+  console.log('hehe:', formData);
+  
+  if (formData.BAC !== 1) {
+    console.log(formData.BAC);
+    setValiderText('Valider BAC');
+  } else if (session?.user?.previleges?.VALIDATION_BAP && formData.BAP !== 3 && formData.BAC === 1) {
+    if (formData.BAP === 0 && session?.user?.ID_struct_fk === struDestID) {
+      setValiderText('Valider BAP NIV1(directeur de la structure)');
+    } else if (formData.BAP === 1 && session?.user?.ID_struct_fk === 24 && struDestID) {
+      setValiderText('Valider BAP NIV2(directeur de règlement)');
+    } else if (formData.BAP === 2 && session?.user?.ID_struct_fk === 81 && struDestID) {
+      setValiderText('Valider BAP NIV3(conseil administratif)');
+    }
+  } else if (session?.user?.previleges?.VALIDATION_BAPT && formData.BAPT !== 1 && formData.BAP === 3) {
+    setValiderText('Valider BAPT');
+  }else{
+    setValiderText('');
+  }
+}, [formData, session, struDestID]);
+
+
+const getStruDestID = async (stru_dest) => {
+  const table = 'structure';
+  const fields = 'IDstruct';
+  const filters = `libelle='${stru_dest}'`;
+  const query = new URLSearchParams({ table, fields, filters }).toString();
+  const url = `/api/getdata?${query}`;
+  try {
+    const response = await fetch(url);
+    const result = await response.json();
+    console.log(result)
+    console.log('hehe',result.results[0]?.IDstruct);
+    return result.results[0]?.IDstruct;
+  } catch (error) {
+
+    console.error('Error fetching data:', error);
+  }
+};
+const getLigneID = async (ligne) => {
+  const table = 'lignbbudget';
+  const fields = 'IDlign';
+  const filters = `libelle='${ligne}'`;
+  const query = new URLSearchParams({ table, fields, filters }).toString();
+  const url = `/api/getdata?${query}`;
+  try {
+    const response = await fetch(url);
+    const result = await response.json();
+    console.log('id',result)
+    return result.results[0]?.IDlign;
+  } catch (error) {
+    console.error('Error fetching ligne id:', error);
+  }
+};
+useEffect(() => {
+  if (formData.stru_dest) {
+    console.log(formData.stru_dest)
+    getStruDestID(formData.stru_dest).then((id) => {
+      setStruDestID(id);
+    });
+    console.log(struDestID  )
+  }
+
+}, [formData.stru_dest]);
+const [validerText,setValiderText] = useState('')
+// useEffect(() => {
+//   if ((formData.etat === 2) || (session?.user?.previleges?.MODIFICATION_FACTURE === 0)) {
+//     setIsReadonly(true);
+
+//   }
+//   if (session?.user?.previleges?.VALIDATION_BAC && formData.BAC !== 1) {
+    
+// console.log(formData.BAC)
+//     setValiderText('Valider BAC');
+// } else if (session?.user?.previleges?.VALIDATION_BAP && formData.BAP !== 3 && formData.BAC === 1) {
+//     if (formData.BAP === 0 && session?.user?.IDstruct_fk === struDestID) {
+//         setValiderText('Valider BAP NIV1(directeurde la structure)');
+//     } else if (formData.BAP === 1 && session?.user?.IDstruct_fk === 24 && struDestID ) {
+//         setValiderText('Valider BAP NIV2(directeur de reglement)');
+//     } else if (formData.BAP === 2 && session?.user?.IDstruct_fk === 81 && struDestID ) {
+//         setValiderText('Valider BAP NIV3(conseil administraftif)');
+//     }
+// } else if (session?.user?.previleges?.VALIDATION_BAPT && formData.BAPT !== 1 && formData.BAP === 3) {
+//     setValiderText('Valider BAPT');
+// }
+// console.log(validerText)
+// console.log(formData.BAC)
+
+// },[formData,session?.user?.previleges?.MODIFICATION_FACTURE,session?.user?.previleges?.VALIDATION_BAC,session?.user?.previleges?.VALIDATION_BAP,session?.user?.previleges?.VALIDATION_BAPT])
      // Update search query on input change
      const fetchStruct = async () => {
       const fields = 'libelle';
@@ -326,14 +512,12 @@ useEffect(() => {
         try {
           const res = await fetchLign('','',false);
           setLib(res.results);
-          console.log(res.results);
           await fetchSuppliers(); // Assuming fetchSuppliers is async and should be awaited
         } catch (error) {
           console.error('Error fetching data:', error);
         }
         try {
           const res = await fetchFiles(params.id);
-          console.log(res)
           setFiles(res);
         } catch (error) {
           
@@ -403,7 +587,7 @@ if (status === 'loading') {
   
 
   return (
-    <div className=" overlay p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg">
+    <div className=" overlay p-4 max-w-6xl mx-auto bg-gray-100 border border-gray-300 rounded-lg mt-8">
       <>
   <h1 className="text-2xl font-bold mb-4 text-purple-800">Modifier une facture</h1>
   <form onSubmit={handleSubmit} className="space-y-4">
@@ -469,8 +653,9 @@ if (status === 'loading') {
           name="date"
           value={formData.date}
           onChange={handleChange}
-          className={`w-full border border-purple-800 p-2 rounded-md bg-white text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
+          className={`w-full border border-purple-800 p-2 rounded-md bg-gray-400 text-gray-800 ${isReadOnly ? 'bg-gray-400 text-black cursor-not-allowed' : ''}`}
           readOnly={isReadOnly}
+          disabled
         />
       </div>
 
@@ -826,17 +1011,18 @@ if (status === 'loading') {
     >
       Modifier et Enregistrer
     </button>
-    {previleges?.admin && (
+    </>
+)}
+    {(validerText &&(formData.type_saisie != "2" && formData.type_saisie != "5" && formData.etat != "2") ) && (
           <button
           type="button"
           onClick={handleValidation}
           className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600 mt-4"
         >
-          valider
+          {validerText}
         </button>
         )}
-  </>
-)}
+  
         
         
         

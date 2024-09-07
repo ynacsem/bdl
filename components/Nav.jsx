@@ -42,14 +42,29 @@ export default function NavigationMenu() {
                                 </div>
                             </Link>
                         </li>
+                        <li>
+                            <Link href="/managefrs">
+                                <div className="text-primary hover:text-secondary px-3 py-2 rounded-md text-lg font-semibold transition-colors duration-300">
+                                    manage Fournisseurs
+                                </div>
+                            </Link>
+                        </li>
+                        
                     </ul>}
                     {session && (
+                        <>
                         <button
                             onClick={handleSignOut}
                             className="text-primary hover:text-secondary px-3 py-2 rounded-md text-lg font-semibold transition-colors duration-300"
                         >
                             Sign Out
                         </button>
+                        <Link href="/ChangePassword">
+                                <div className="text-primary hover:text-secondary px-3 py-2 rounded-md text-lg font-semibold transition-colors duration-300">
+                                ChangePassword
+                                </div>
+                            </Link>
+                        </>
                     )}
                     {session?.user?.previleges?.admin && (
                         <>
@@ -63,6 +78,16 @@ export default function NavigationMenu() {
                             href={"/manageusers"}
                             className="text-primary hover:text-secondary px-3 py-2 rounded-md text-lg font-semibold transition-colors duration-300">
                             gérer les utilisateurs
+                        </Link>
+                        <Link
+                            href={"/creategroup"}
+                            className="text-primary hover:text-secondary px-3 py-2 rounded-md text-lg font-semibold transition-colors duration-300">
+                            créer un groupe
+                        </Link>
+                        <Link
+                            href={"/managegroup"}
+                            className="text-primary hover:text-secondary px-3 py-2 rounded-md text-lg font-semibold transition-colors duration-300">
+                            gérer les groupes
                         </Link>
                         </>
                     )}
